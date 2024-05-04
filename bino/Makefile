@@ -16,7 +16,7 @@ OBJS_djumbai-queue = $(SRCS_djumbai-queue:.cpp=.o)
 
 
 # Build targets for each program
-all: $(PROGRAMS)
+all: clean $(PROGRAMS)
 
 djumbai-inject: $(OBJS_djumbai-inject)
 	$(CXX) $(CXXFLAGS) -o $@ $^
@@ -31,4 +31,6 @@ djumbai-queue: $(OBJS_djumbai-queue)
 # Clean target
 clean:
 	rm -f $(PROGRAMS) $(OBJS_djumbai-inject) $(OBJS_djumbai-queue) 
+	rm -f ../queue/mess/* ../queue/pid/*
+
 #$(OBJS_program2) $(OBJS_program3)
