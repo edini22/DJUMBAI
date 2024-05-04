@@ -6,7 +6,7 @@ projeto TS3
 - criação e exclusão de utilizadores
 - criação e exclusão de grupos de utilizadores
 
-# Estrutura das pastas 
+# Estrutura 
 - alias
 - bin
 - boot
