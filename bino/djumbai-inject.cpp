@@ -49,8 +49,8 @@ int main() {
 
     if (pid == 0) { // Child process
         // Close unused ends of the pipes
-        close(input_pipe[1]);  // Close the write end of the input pipe
-        close(output_pipe[0]); // Close the read end of the output pipe
+        close(input_pipe[1]);  
+        close(output_pipe[0]); 
 
         // Replace standard input and output with pipe file descriptors
         if (dup2(input_pipe[0], STDIN_FILENO) == -1) {
@@ -70,14 +70,11 @@ int main() {
         // Execute the other program
         execl("./djumbai-queue", "djumbai-queue", NULL);
 
-
-        // If execl fails, it means the program failed to execute
         cerr << "Failed to execute the program\n";
         return 1;
     } else { // Parent process
-        // Close unused ends of the pipes
-        close(input_pipe[0]);  // Close the read end of the input pipe
-        close(output_pipe[1]); // Close the write end of the output pipe
+        close(input_pipe[0]);  
+        close(output_pipe[1]); 
 
 
         //================= USER INPUT =================

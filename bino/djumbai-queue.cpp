@@ -28,48 +28,12 @@ int main() {
         "!<SENDER>!"
     };
 
-    // int count = 0;
-    // getchar();
-    // while (getline(cin, input1) && !input1.empty()){
-    //     if (input1 == "!<RECEIVER>!")
-    //     {
-    //         getchar();
-    //         while (getline(cin, input2) && !input2.empty()){
-                
-    //             if (input2 == "!<MESSAGE>!")
-    //             {
-    //                 getchar();
-    //                 while (getline(cin, input3) && !input3.empty()){
-                        
-    //                     if (input3 == "!<SENDER>!")
-    //                     {
-    //                         break;
-    //                     }else{
-    //                         sender += input3;
-    //                     }
-    //                 }
-    //             }else{
-    //                 count += input2.length();
-    //                 if (count > 512) {
-    //                     cerr << "Mensagem foi forjada" << endl;
-    //                     exit(1);
-    //                 }
-    //                 message += input2 + "\n";
-    //             }
-    //         }
-    //     }else{
-    //         receiver += input1;
-    //     }
-    // }
-    
 
     int count = 0;
     int tag = 0;
     getchar();
     while (getline(cin, input1) && tag < 4) {
-        //printf("Input: %s\n", input1.c_str());
         if (input1 == tags[tag]) {
-            //printf("Tag: %d\n", tag);
             tag++;
             getchar();
             count = 0;
