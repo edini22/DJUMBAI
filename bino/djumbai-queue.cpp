@@ -38,7 +38,7 @@ int main() {
     const string path = "../queue/pid/" + to_string(pid) + ".mdjumbai";
     const char *pid_filename = path.c_str();
 
-    ofstream file(path); // #TODO: mudar nome do arquivo e permissoes
+    ofstream file(path); // #TODO: mudar permissoes
     if (!file.is_open()) {
         cerr << "Failed to open file for writing.\n";
         return 1;
