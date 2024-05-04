@@ -31,6 +31,6 @@ djumbai-queue: $(OBJS_djumbai-queue)
 # Clean target
 clean:
 	rm -f $(PROGRAMS) $(OBJS_djumbai-inject) $(OBJS_djumbai-queue) 
-	rm -f ../queue/mess/* ../queue/pid/*
+	rm -f ../queue/mess/* ../queue/pid/* ../queue/local/* ../queue/todo/* ../queue/intd/*
 
 #$(OBJS_program2) $(OBJS_program3)

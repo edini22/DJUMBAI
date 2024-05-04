@@ -4,14 +4,32 @@
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <pwd.h>
 
 using namespace std;
 
 struct Message {
     string sender;
     string receiver;
+    string message;
     string subject;
 };
+
+bool validate_uid(const uid_t uid) {
+
+    // Obtém informações do usuário associado ao UID
+    struct passwd *pw = getpwuid(uid);
+
+    if (pw != NULL) {
+        // UID válido
+        std::cout << "O UID " << uid << " corresponde ao usuário: " << pw->pw_name << std::endl;
+        return true;
+    } else {
+        // UID inválido
+        std::cout << "UID " << uid << " não corresponde a nenhum usuário válido." << std::endl;
+        return false;
+    }
+}
 
 int main() {
     int input_pipe[2];
@@ -52,6 +70,7 @@ int main() {
         // Execute the other program
         execl("./djumbai-queue", "djumbai-queue", NULL);
 
+
         // If execl fails, it means the program failed to execute
         cerr << "Failed to execute the program\n";
         return 1;
@@ -60,34 +79,79 @@ int main() {
         close(input_pipe[0]);  // Close the read end of the input pipe
         close(output_pipe[1]); // Close the write end of the output pipe
 
-        // Write strings to input_pipe[1]
 
-        cout << "Enter a message: " << endl;
-        // string message;
-        // cin >> message;
+        //================= USER INPUT =================
+        // Message msg; //rdt
 
+        int id;
+        cout << "Receiver number: ";
+        cin >> id;
+        if (!validate_uid(id)) {return 1;} 
+        // msg.sender = to_string(getuid()); //rdt
+
+        string user_init_tag = "R";
+        string user_end_tag = "\n!<RECEIVER>!";
+        
+        string message_tosend;
+        message_tosend.append(user_init_tag);
+        message_tosend.append(to_string(id));
+        message_tosend.append(user_end_tag);
+        
+        string subjet;
+        cout << "Enter a subjet: ";
+        cin >> subjet;
+        // msg.subject = to_string(getuid()); //rdt
+
+        if (subjet.length() <= 0 || subjet.length() > 200) {
+            cerr << "Input message must have size between 0 and 200";
+        }
+
+        string subjetct_init_tag = "\nS";
+        string subjetct_end_tag = "\n!<SUBJECT>!";
+        
+        message_tosend.append(subjetct_init_tag);
+        message_tosend.append(to_string(id));
+        message_tosend.append(subjetct_end_tag);
+
+        cout << "Enter a message:" << endl;
         char word;
         string message;
         while (cin.get(word)) {
             message += word;
         }
 
-        cout << "input foi: " << message << endl;
-
         if (message.length() <= 0 || message.length() > 512) {
-            cerr << "Input must have size between 0 and 512";
+            cerr << "Input message must have size between 0 and 512";
         }
 
-        string message_tosend = "M";
-        message_tosend.append(message);
-        message_tosend.append("\n!<MESSAGE>!");
+        string message_init_tag = "\nM";
+        string message_end_tag = "\n!<MESSAGE>!";
 
-        cout << "Depois do apppend" << message_tosend << endl;
+        // msg.message = message; //rdt
+
+        message_tosend.append(message_init_tag);
+        message_tosend.append(message);
+        message_tosend.append(message_end_tag);
+
+        string sender_init_tag = "\nS";
+        string sender_end_tag = "\n!<SENDER>!";
+
+        uid_t uid = getuid(); // Get the user ID
+        cout << "Sender UID: " << uid << endl;
+        
+        message_tosend.append(sender_init_tag);
+        message_tosend.append(to_string(uid));
+        message_tosend.append(sender_end_tag);
+
+        // msg.receiver = to_string(uid); //rdt
+        //==============================================
+        
+
         const char *message_buffer = message_tosend.c_str();
-        cout << "Sending to child: " << message_buffer << endl;
         write(input_pipe[1], message_buffer, strlen(message_buffer));
 
         close(input_pipe[1]); // Close the write end of the input pipe
+
 
         // Read strings from output_pipe[0]
         char buffer[256];
@@ -95,7 +159,7 @@ int main() {
         while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
             // Null-terminate the buffer to print it as a string
             buffer[bytesRead] = '\0';
-            cout << "Received from child: " << buffer;
+            cout << "DJUMBAI-QUEUE: " << buffer;
         }
         close(output_pipe[0]); // Close the read end of the output pipe
 
