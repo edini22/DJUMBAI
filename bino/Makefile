@@ -6,7 +6,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra
 
 DIRECTORIES = ../queue/mess/* ../queue/pid/* ../queue/local/* ../queue/todo/* ../queue/intd/* ../queue/info/*
 
-PIPES = /tmp/clean_pipe
+PIPES = /tmp/clean_pipe0 /tmp/clean_pipe1 /tmp/spawn_pipe
 
 # Source files for each program
 PROGRAMS = djumbai-inject djumbai-queue djumbai-send djumbai-clean

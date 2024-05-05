@@ -8,15 +8,51 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <libgen.h> // para dirname()
+#include <regex>
 
 using namespace std;
 using namespace filesystem;
 
+
+void sed(const string &filename, const string &user) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+    cout << "Opened file: " << filename << endl;
+    const string done = "DONE\n";
+    const string notdone = "NOT DONE";
+
+
+    string line;
+    while (getline(file, line)) {
+        cout << "linha:" << line << " user:" << user << "-" << endl;
+        if (line == user) {
+            cout << "ENTROU" <<line << endl;
+            getline(file, line);
+            regex regex(notdone);
+            string modifiedLine = regex_replace(line, regex, done);
+            cout << modifiedLine << endl;
+            break;
+        }
+    }
+
+    file.close();
+}
+
+
 int main() {
 
-    const char *pipeName = "/tmp/clean_pipe";
+    const char *pipe_name_clean0 = "/tmp/clean_pipe0";
+    const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 
-    mkfifo(pipeName, 0600);
+    const char *pipe_name_spawn = "/tmp/spawn_pipe";
+
+    mkfifo(pipe_name_clean0, 0600);
+    mkfifo(pipe_name_clean1, 0600);
+    
+    mkfifo(pipe_name_spawn, 0600);
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
@@ -33,14 +69,12 @@ int main() {
 
     string folderPath = parentDirStr + "/queue/todo";
     
+    if (!is_directory(folderPath)) {
+        cerr << "Erro: O caminho não é um diretório válido.\n";
+        return 1;
+    }
+
     while (true){
-
-        
-
-        if (!is_directory(folderPath)) {
-            cerr << "Erro: O caminho não é um diretório válido.\n";
-            return 1;
-        }
 
         for (const auto& entry : directory_iterator(folderPath)) {
             if (is_regular_file(entry)) {
@@ -90,7 +124,7 @@ int main() {
                         info_file.close();
                         
                         //TODO: ver como vamos fazer quando tiver mais do que um
-                        local_file << receiver << "\n" << "NOT DONE" << "\n";
+                        local_file << '[' << receiver << "]\n" << "NOT DONE" << "\n";
                         local_file.close();
 
                     } else {
@@ -102,76 +136,96 @@ int main() {
                     
                     for (int i = 0; i < 3; i++) // 3 tentativas
                     {
-                        int fd = open(pipeName, O_RDWR);
-                        if (fd == -1) {
-                            cerr << "Erro ao abrir o pipe.\n";
+                        int fd_clean0 = open(pipe_name_clean0, O_RDWR);
+                        if (fd_clean0 == -1) {
+                            cerr << "Erro ao abrir o pipe fd_clean0.\n";
                             return 1;
                         }
-                        ssize_t bytesWritten = write(fd, message_p, strlen(message_p) + 1);
+                        ssize_t bytesWritten = write(fd_clean0, message_p, strlen(message_p) + 1);
+                        cout << "escrevi no pipe :" << message_p << " na " << i << endl;
                         if (bytesWritten == -1) {
                             cerr << "Erro ao escrever no pipe.\n";
-                            close(fd);
+                            close(fd_clean0);
+                        }else{
+                            close(fd_clean0);
                         }
 
                         // read status code
-                        char buffer[256];
-                        ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
+                        int fd_clean1 = open(pipe_name_clean1, O_RDWR);
+                        if (fd_clean1 == -1) {
+                            cerr << "Erro ao abrir o pipe fd_clean1.\n";
+                            return 1;
+                        }
+                        char buffer[1024];
+                        ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
                         if (bytesRead == -1) {
                             cerr << "Erro ao ler do pipe.\n";
-                            close(fd);
+                            close(fd_clean1);
                         }
 
                         if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
                             cout << "Ficheiros removidos com sucesso!\n";
-                            close(fd);
+                            close(fd_clean1);
                             break;
+                        }else{
+                            close(fd_clean1);
                         }
                         if(i == 2){
                             //TODO: Deu erro, o que fazer?
-                            close(fd);
                         }
                     }
-                    
-                    //TODO: enviar pipe para o djumbai-lspawn.cpp com a mensagem 
 
-                    
+                    // sed -i "/^\[1\]/{N;s/NOT DONE/DONE/g;}" ./1890788.mdjumbai
 
+                    string sedCommand = "sed -i \"/^\\["+ receiver +"\\]/{N;s/NOT DONE/DONE/g;}\" " + parentDirStr + "/queue/local/" + filename_without_extension + ".mdjumbai";
+                    int status = system(sedCommand.c_str());
 
+                    cout << "Status: " << status << endl;
                     
+                    //Remove the file from the mess folder
                     message = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai";
                     const char * message_k = message.c_str();
                     for (int i = 0; i < 3; i++) // 3 tentativas
                     {
-                        int fd = open(pipeName, O_RDWR);
-                        if (fd == -1) {
+                        int fd_clean0 = open(pipe_name_clean0, O_RDWR);
+                        if (fd_clean0 == -1) {
                             cerr << "Erro ao abrir o pipe.\n";
                             return 1;
                         }
-                        ssize_t bytesWritten = write(fd, message_k, strlen(message_k) + 1);
-                        cout << "Message: " << message_k << endl;
+                        ssize_t bytesWritten = write(fd_clean0, message_k, strlen(message_k) + 1);
+                        cout << "escrevi no pipe :" << message_k << " na " << i << endl;
                         if (bytesWritten == -1) {
-                            std::cerr << "Erro ao escrever no pipe.\n";
-                            close(fd);
+                            cerr << "Erro ao escrever no pipe.\n";
+                            close(fd_clean0);
+                        }else{
+                            close(fd_clean0);
                         }
 
                         // read status code
-                        char buffer[256];
-                        ssize_t bytesRead = read(fd, buffer, sizeof(buffer));
+                        int fd_clean1 = open(pipe_name_clean1, O_RDWR);
+                        if (fd_clean1 == -1) {
+                            cerr << "Erro ao abrir o pipe.\n";
+                            return 1;
+                        }
+                        char buffer[1024];
+                        ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
                         if (bytesRead == -1) {
                             cerr << "Erro ao ler do pipe.\n";
-                            close(fd);
+                            close(fd_clean1);
                         }
 
                         if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-                            cout << "Ficheiros removidos com sucesso2!\n";
-                            close(fd);
+                            cout << "Ficheiros removidos com sucesso!\n";
+                            close(fd_clean1);
                             break;
+                        }else{
+                            close(fd_clean1);
                         }
                         if(i == 2){
                             //TODO: Deu erro, o que fazer?
-                            close(fd);
                         }
                     }
+
 
                     file.close();
                 } else {
