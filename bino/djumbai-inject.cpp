@@ -107,7 +107,7 @@ int main() {
         string subjetct_end_tag = "\n!<SUBJECT>!";
         
         message_tosend.append(subjetct_init_tag);
-        message_tosend.append(to_string(id));
+        message_tosend.append(subjet);
         message_tosend.append(subjetct_end_tag);
 
         cout << "Enter a message:" << endl;

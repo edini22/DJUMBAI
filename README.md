@@ -20,3 +20,49 @@ projeto TS3
     - pid
     - todo
 - users
+
+# Send
+- todo/212321312.lnk
+    - intd
+        - from Rois to FIGOS,MELANCIAS
+
+    - create info/212321312.mdjumbai
+    - create local/212321312.mdjumbai
+        - FIGOS [Not Done] 
+        - MELANCIAS [Not Done]
+
+    - clean[intd/todo/212321312] <- tag [removed]
+    - if [removed]
+        - modify local/212321312.mdjumbai
+            - FIGOS [Not Done] -> lspawn[FIGOS] <- FIGOS [Done]
+            - MELANCIAS [Not Done] -> lspawn[MELANCIAS] <- MELANCIAS [Done]
+
+        - clean[mess/212321312] <- tag [removed]
+        - if [removed]
+            - remove local/212321312.mdjumbai and info/212321312.mdjumbai
+
+
+- todo/212321313.lnk
+- todo/212321314.lnk
+
+# Permissoes
+
+qmailq (queue, clean)
+    * -w-
+        - mess
+        - intd
+        - pid
+        - todo
+    
+qmails (send)
+    * rw-
+        - info (envelope(sender and subject))
+        - local (received with tag([Done]/[Not Done]))
+    * r--
+        - mess
+        - intd
+        - todo
+
+# TODO
+
+* bash para criar users e meter UIDs num ficheiro apenas com permissoes de read 
