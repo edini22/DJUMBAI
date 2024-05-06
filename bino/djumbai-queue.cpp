@@ -14,8 +14,6 @@ namespace fs = std::filesystem;
 
 struct Message
 {
-    int teste;
-    char teste2;
     char sender[25];
     char receiver[25];
     char message[513];
@@ -46,8 +44,6 @@ int main()
 
     // Exibe as strings recebidas
     cout << "============================" << endl;
-    cout << "teste: " << msg.teste << endl;
-    cout << "teste2: " << msg.teste2 << endl;
     cout << "Message: " << msg.message << endl;
     cout << "Sender: " << msg.sender << endl;
     cout << "Receiver: " << msg.receiver << endl;

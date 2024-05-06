@@ -10,8 +10,6 @@ using namespace std;
 
 struct Message
 {
-    int teste;
-    char teste2;
     char sender[25];
     char receiver[25];
     char message[513];
@@ -98,7 +96,6 @@ int main()
         close(output_pipe[1]);
 
         //================= USER INPUT =================
-        // Message msg; //rdt
 
         Message msg;
 
@@ -109,36 +106,19 @@ int main()
         {
             return 1;
         }
-        // msg.sender = to_string(getuid()); //rdt
 
-        string user_init_tag = "R";
-        string user_end_tag = "\n!<RECEIVER>!";
-
-        string message_tosend;
-        message_tosend.append(user_init_tag);
-        message_tosend.append(to_string(id));
-        message_tosend.append(user_end_tag);
-
-        sprintf(msg.receiver, "%d", id); // rdt
+        sprintf(msg.receiver, "%d", id); 
 
         string subjet;
         cout << "Enter a subjet: ";
         cin >> subjet;
-        // msg.subject = to_string(getuid()); //rdt
 
         if (subjet.length() <= 0 || subjet.length() > 200)
         {
             cerr << "Input message must have size between 0 and 200";
         }
 
-        string subjetct_init_tag = "\nS";
-        string subjetct_end_tag = "\n!<SUBJECT>!";
-
-        message_tosend.append(subjetct_init_tag);
-        message_tosend.append(subjet);
-        message_tosend.append(subjetct_end_tag);
-
-        strcpy(msg.subject, subjet.c_str()); // rdt
+        strcpy(msg.subject, subjet.c_str()); 
 
         cout << "Enter a message:" << endl;
         char word;
@@ -153,16 +133,7 @@ int main()
             cerr << "Input message must have size between 0 and 512";
         }
 
-        string message_init_tag = "\nM";
-        string message_end_tag = "\n!<MESSAGE>!";
-
-        // msg.message = message; //rdt
-
-        message_tosend.append(message_init_tag);
-        message_tosend.append(message);
-        message_tosend.append(message_end_tag);
-
-        strcpy(msg.message, message.c_str()); // rdt
+        strcpy(msg.message, message.c_str()); 
 
         string sender_init_tag = "\nS";
         string sender_end_tag = "\n!<SENDER>!";
@@ -170,35 +141,25 @@ int main()
         uid_t uid = getuid(); // Get the user ID
         cout << "Sender UID: " << uid << endl;
 
-        message_tosend.append(sender_init_tag);
-        message_tosend.append(to_string(uid));
-        message_tosend.append(sender_end_tag);
-
-        sprintf(msg.sender, "%d", uid); // rdt
-        msg.teste = 777;
-        msg.teste2 = 'A';
+        sprintf(msg.sender, "%d", uid); 
         //==============================================
 
         const Message msg_final = msg;
         char message_buffer[sizeof(Message)];
         serialize(msg_final, message_buffer);
 
-        // const char *message_buffer = message_tosend.c_str();
-        ssize_t bytes_written = write(input_pipe[1], message_buffer, sizeof(Message));
-        // write(input_pipe[1], message_buffer, strlen(message_buffer));
+        write(input_pipe[1], message_buffer, sizeof(Message));
 
         close(input_pipe[1]); // Close the write end of the input pipe
 
-        // Read strings from output_pipe[0]
-        char buffer[256];
+        char buffer[1024];
         ssize_t bytesRead;
         while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0)
         {
-            // Null-terminate the buffer to print it as a string
             buffer[bytesRead] = '\0';
             cout << "DJUMBAI-QUEUE: " << buffer;
         }
-        close(output_pipe[0]); // Close the read end of the output pipe
+        close(output_pipe[0]);
 
         // Wait for the child process to finish
         int status;

@@ -7,7 +7,7 @@
 #include <sys/un.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <libgen.h> // para dirname()
+#include <libgen.h> 
 
 using namespace std;
 using namespace filesystem;
@@ -21,22 +21,61 @@ int parseUID(const string &str) {
             insideBrackets = true;
         } else if (ch == ']') {
             insideBrackets = false;
-            break; // We've found the closing bracket, stop parsing
+            break; 
         } else if (insideBrackets) {
-            // Append digits to the number string
             if (isdigit(ch)) {
                 numberStr += ch;
             } else {
-                // Invalid character inside brackets
                 throw invalid_argument("Invalid character inside brackets");
             }
         }
     }
 
-    //TODO: Verificar se o número corresponde a um UID de um user 
-
-    // Convert the string to an integer
     return stoi(numberStr);
+}
+
+bool Rois(const char * message,const char * pipe0, const char * pipe1){
+    for (int i = 0; i < 3; i++) { // 3 tentativas
+            int fd_clean0 = open(pipe0, O_RDWR);
+            if (fd_clean0 == -1) {
+                cerr << "Erro ao abrir o pipe fd_clean0.\n";
+                return 1;
+            }
+            ssize_t bytesWritten = write(fd_clean0, message, strlen(message) + 1);
+            cout << "escrevi no pipe :" << message << " na " << i << endl;
+            if (bytesWritten == -1) {
+                cerr << "Erro ao escrever no pipe.\n";
+                close(fd_clean0);
+            }else{
+                close(fd_clean0);
+            }
+
+            // read status code
+            int fd_clean1 = open(pipe1, O_RDWR);
+            if (fd_clean1 == -1) {
+                cerr << "Erro ao abrir o pipe fd_clean1.\n";
+                return 1;
+            }
+            char buffer[1024];
+            ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
+            if (bytesRead == -1) {
+                cerr << "Erro ao ler do pipe.\n";
+                close(fd_clean1);
+            }
+
+            if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
+                cout << "Ficheiros removidos com sucesso!\n";
+                close(fd_clean1);
+                break;
+            }else{
+                close(fd_clean1);
+            }
+            if(i == 2){
+                //TODO: Deu erro, o que fazer?
+                return false;
+            }
+        }
+        return true;
 }
 
 int main() {
@@ -134,46 +173,7 @@ int main() {
                     string message = parentDirStr + "/queue/todo/" + filename_without_extension + ".lnk" + "\n" + parentDirStr + "/queue/intd/" + filename_without_extension + ".mdjumbai";
                     const char * message_p = message.c_str();
                     
-                    for (int i = 0; i < 3; i++) // 3 tentativas
-                    {
-                        int fd_clean0 = open(pipe_name_clean0, O_RDWR);
-                        if (fd_clean0 == -1) {
-                            cerr << "Erro ao abrir o pipe fd_clean0.\n";
-                            return 1;
-                        }
-                        ssize_t bytesWritten = write(fd_clean0, message_p, strlen(message_p) + 1);
-                        cout << "escrevi no pipe :" << message_p << " na " << i << endl;
-                        if (bytesWritten == -1) {
-                            cerr << "Erro ao escrever no pipe.\n";
-                            close(fd_clean0);
-                        }else{
-                            close(fd_clean0);
-                        }
-
-                        // read status code
-                        int fd_clean1 = open(pipe_name_clean1, O_RDWR);
-                        if (fd_clean1 == -1) {
-                            cerr << "Erro ao abrir o pipe fd_clean1.\n";
-                            return 1;
-                        }
-                        char buffer[1024];
-                        ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
-                        if (bytesRead == -1) {
-                            cerr << "Erro ao ler do pipe.\n";
-                            close(fd_clean1);
-                        }
-
-                        if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-                            cout << "Ficheiros removidos com sucesso!\n";
-                            close(fd_clean1);
-                            break;
-                        }else{
-                            close(fd_clean1);
-                        }
-                        if(i == 2){
-                            //TODO: Deu erro, o que fazer?
-                        }
-                    }
+                    Rois(message_p, pipe_name_clean0, pipe_name_clean1);
 
                     // ------------ LSPAWN ------------
                     ifstream local_file1(local_path);
@@ -211,44 +211,8 @@ int main() {
                                 
                                 const char * message_s = m.c_str();
 
-                                for (int i = 0; i < 3; i++) {
-                                    int fd_spawn0 = open(pipe_name_spawn0, O_RDWR);
-                                    if (fd_spawn0 == -1) {
-                                        cerr << "Erro ao abrir o pipe fd_spawn0.\n";
-                                        return 1;
-                                    }
-                                    ssize_t bytesWritten = write(fd_spawn0, message_s, strlen(message_s) + 1);
-                                    cout << "escrevi no pipe :" << message_s << " na iteraçao :" << i << endl;
-                                    if (bytesWritten == -1) {
-                                        cerr << "Erro ao escrever no pipe.\n";
-                                        close(fd_spawn0);
-                                    } else {
-                                        close(fd_spawn0);
-                                    }
-
-                                    // read status code
-                                    int fd_spawn1 = open(pipe_name_spawn1, O_RDWR);
-                                    if (fd_spawn1 == -1) {
-                                        cerr << "Erro ao abrir o pipe fd_clean1.\n";
-                                        return 1;
-                                    }
-                                    char buffer[1024];
-                                    ssize_t bytesRead = read(fd_spawn1, buffer, sizeof(buffer));
-                                    if (bytesRead == -1) {
-                                        cerr << "Erro ao ler do pipe.\n";
-                                        close(fd_spawn1);
-                                    }
-
-                                    if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-                                        cout << "Ficheiros removidos com sucesso!\n";
-                                        close(fd_spawn1);
-                                        break;                                    } else {
-                                        close(fd_spawn1);
-                                    }
-                                    if (i == 2) {
-                                        // TODO: Deu erro, o que fazer?
-                                    }
-                                }
+                                Rois(message_s,pipe_name_spawn0, pipe_name_spawn1);
+                                
                             }
                         }
                     }
@@ -261,46 +225,8 @@ int main() {
                     // Remove the file from the mess folder
                     message = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai";
                     const char *message_k = message.c_str();
-                    for (int i = 0; i < 3; i++) // 3 tentativas
-                    {
-                        int fd_clean0 = open(pipe_name_clean0, O_RDWR);
-                        if (fd_clean0 == -1) {
-                            cerr << "Erro ao abrir o pipe.\n";
-                            return 1;
-                        }
-                        ssize_t bytesWritten = write(fd_clean0, message_k, strlen(message_k) + 1);
-                        cout << "escrevi no pipe :" << message_k << " na " << i << endl;
-                        if (bytesWritten == -1) {
-                            cerr << "Erro ao escrever no pipe.\n";
-                            close(fd_clean0);
-                        } else {
-                            close(fd_clean0);
-                        }
-
-                        // read status code
-                        int fd_clean1 = open(pipe_name_clean1, O_RDWR);
-                        if (fd_clean1 == -1) {
-                            cerr << "Erro ao abrir o pipe.\n";
-                            return 1;
-                        }
-                        char buffer[1024];
-                        ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
-                        if (bytesRead == -1) {
-                            cerr << "Erro ao ler do pipe.\n";
-                            close(fd_clean1);
-                        }
-
-                        if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-                            cout << "Ficheiros removidos com sucesso!\n";
-                            close(fd_clean1);
-                            break;
-                        } else {
-                            close(fd_clean1);
-                        }
-                        if (i == 2) {
-                            // TODO: Deu erro, o que fazer?
-                        }
-                    }
+                    
+                    Rois(message_k, pipe_name_clean0, pipe_name_clean1);
 
                     file.close();
                 } else {
