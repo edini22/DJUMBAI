@@ -8,57 +8,76 @@
 
 using namespace std;
 
-struct Message {
-    string sender;
-    string receiver;
-    string message;
-    string subject;
+struct Message
+{
+    int teste;
+    char teste2;
+    char sender[25];
+    char receiver[25];
+    char message[513];
+    char subject[201];
 };
 
-bool validate_uid(const uid_t uid) {
+// Serialize struct to bytes
+void serialize(const Message &obj, char *buffer)
+{
+    std::memcpy(buffer, &obj, sizeof(Message));
+}
+
+bool validate_uid(const uid_t uid)
+{
 
     // Obtém informações do usuário associado ao UID
     struct passwd *pw = getpwuid(uid);
 
-    if (pw != NULL) {
+    if (pw != NULL)
+    {
         // UID válido
         std::cout << "O UID " << uid << " corresponde ao usuário: " << pw->pw_name << std::endl;
         return true;
-    } else {
+    }
+    else
+    {
         // UID inválido
         std::cout << "UID " << uid << " não corresponde a nenhum usuário válido." << std::endl;
         return false;
     }
 }
 
-int main() {
+int main()
+{
     int input_pipe[2];
     int output_pipe[2];
     // Create pipes for input and output
-    if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1) {
+    if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1)
+    {
         cerr << "Failed to create pipes\n";
         return 1;
     }
 
     pid_t pid = fork();
 
-    if (pid == -1) {
+    if (pid == -1)
+    {
         cerr << "Failed to fork\n";
         return 1;
     }
 
-    if (pid == 0) { // Child process
+    if (pid == 0)
+    { // Child process
         // Close unused ends of the pipes
-        close(input_pipe[1]);  
-        close(output_pipe[0]); 
+        close(input_pipe[1]);
+        close(output_pipe[0]);
 
         // Replace standard input and output with pipe file descriptors
-        if (dup2(input_pipe[0], STDIN_FILENO) == -1) {
+        if (dup2(input_pipe[0], STDIN_FILENO) == -1)
+        {
             cerr << "Failed to duplicate input file descriptor\n";
             return 1;
         }
 
-        if (dup2(output_pipe[1], STDOUT_FILENO) == -1) {
+        if (dup2(output_pipe[1], STDOUT_FILENO) == -1)
+        {
             cerr << "Failed to duplicate output file descriptor\n";
             return 1;
         }
@@ -72,52 +91,65 @@ int main() {
 
         cerr << "Failed to execute the program\n";
         return 1;
-    } else { // Parent process
-        close(input_pipe[0]);  
-        close(output_pipe[1]); 
-
+    }
+    else
+    { // Parent process
+        close(input_pipe[0]);
+        close(output_pipe[1]);
 
         //================= USER INPUT =================
         // Message msg; //rdt
 
+        Message msg;
+
         int id;
         cout << "Receiver number: ";
         cin >> id;
-        if (!validate_uid(id)) {return 1;} 
+        if (!validate_uid(id))
+        {
+            return 1;
+        }
         // msg.sender = to_string(getuid()); //rdt
 
         string user_init_tag = "R";
         string user_end_tag = "\n!<RECEIVER>!";
-        
+
         string message_tosend;
         message_tosend.append(user_init_tag);
         message_tosend.append(to_string(id));
         message_tosend.append(user_end_tag);
-        
+
+        sprintf(msg.receiver, "%d", id); // rdt
+
         string subjet;
         cout << "Enter a subjet: ";
         cin >> subjet;
         // msg.subject = to_string(getuid()); //rdt
 
-        if (subjet.length() <= 0 || subjet.length() > 200) {
+        if (subjet.length() <= 0 || subjet.length() > 200)
+        {
             cerr << "Input message must have size between 0 and 200";
         }
 
         string subjetct_init_tag = "\nS";
         string subjetct_end_tag = "\n!<SUBJECT>!";
-        
+
         message_tosend.append(subjetct_init_tag);
         message_tosend.append(subjet);
         message_tosend.append(subjetct_end_tag);
 
+        strcpy(msg.subject, subjet.c_str()); // rdt
+
         cout << "Enter a message:" << endl;
         char word;
         string message;
-        while (cin.get(word)) {
+        while (cin.get(word))
+        {
             message += word;
         }
 
-        if (message.length() <= 0 || message.length() > 512) {
+        if (message.length() <= 0 || message.length() > 512)
+        {
             cerr << "Input message must have size between 0 and 512";
         }
 
@@ -130,30 +162,38 @@ int main() {
         message_tosend.append(message);
         message_tosend.append(message_end_tag);
 
+        strcpy(msg.message, message.c_str()); // rdt
+
         string sender_init_tag = "\nS";
         string sender_end_tag = "\n!<SENDER>!";
 
         uid_t uid = getuid(); // Get the user ID
         cout << "Sender UID: " << uid << endl;
-        
+
         message_tosend.append(sender_init_tag);
         message_tosend.append(to_string(uid));
         message_tosend.append(sender_end_tag);
 
-        // msg.receiver = to_string(uid); //rdt
+        sprintf(msg.sender, "%d", uid); // rdt
+        msg.teste = 777;
+        msg.teste2 = 'A';
         //==============================================
-        
 
-        const char *message_buffer = message_tosend.c_str();
-        write(input_pipe[1], message_buffer, strlen(message_buffer));
+        const Message msg_final = msg;
+        char message_buffer[sizeof(Message)];
+        serialize(msg_final, message_buffer);
+
+        // const char *message_buffer = message_tosend.c_str();
+        ssize_t bytes_written = write(input_pipe[1], message_buffer, sizeof(Message));
+        // write(input_pipe[1], message_buffer, strlen(message_buffer));
 
         close(input_pipe[1]); // Close the write end of the input pipe
-
 
         // Read strings from output_pipe[0]
         char buffer[256];
         ssize_t bytesRead;
-        while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
+        while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0)
+        {
             // Null-terminate the buffer to print it as a string
             buffer[bytesRead] = '\0';
             cout << "DJUMBAI-QUEUE: " << buffer;
