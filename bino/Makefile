@@ -6,14 +6,16 @@ CXXFLAGS = -std=c++17 -Wall -Wextra
 
 DIRECTORIES = ../queue/mess/* ../queue/pid/* ../queue/local/* ../queue/todo/* ../queue/intd/* ../queue/info/*
 
-PIPES = /tmp/clean_pipe0 /tmp/clean_pipe1 /tmp/spawn_pipe
+PIPES = /tmp/clean_pipe0 /tmp/clean_pipe1 /tmp/spawn_pipe0 /tmp/spawn_pipe1
 
 # Source files for each program
-PROGRAMS = djumbai-inject djumbai-queue djumbai-send djumbai-clean
+PROGRAMS = djumbai-inject djumbai-queue djumbai-send djumbai-clean djumbai-lspawn djumbai-local
 SRCS_djumbai-inject = djumbai-inject.cpp
 SRCS_djumbai-queue = djumbai-queue.cpp
 SRCS_djumbai-send = djumbai-send.cpp
 SRCS_djumbai-clean = djumbai-clean.cpp
+SRCS_djumbai-lspawn = djumbai-lspawn.cpp
+SRCS_djumbai-local = djumbai-local.cpp
 
 
 # Object files for each program
@@ -21,6 +23,8 @@ OBJS_djumbai-inject = $(SRCS_djumbai-inject:.cpp=.o)
 OBJS_djumbai-queue = $(SRCS_djumbai-queue:.cpp=.o)
 OBJS_djumbai-send = $(SRCS_djumbai-send:.cpp=.o)
 OBJS_djumbai-clean = $(SRCS_djumbai-clean:.cpp=.o)
+OBJS_djumbai-lspawn = $(SRCS_djumbai-lspawn:.cpp=.o)
+OBJS_djumbai-local = $(SRCS_djumbai-local:.cpp=.o)
 
 
 # Build targets for each program
@@ -37,6 +41,12 @@ djumbai-send: $(OBJS_djumbai-send)
 	
 djumbai-clean: $(OBJS_djumbai-clean)
 	$(CXX) $(CXXFLAGS) -o $@ $^
+
+djumbai-lspawn: $(OBJS_djumbai-lspawn)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+	
+djumbai-local: $(OBJS_djumbai-local)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 	
 # Compile source files to object files
 %.o: %.cpp
@@ -44,4 +54,4 @@ djumbai-clean: $(OBJS_djumbai-clean)
 
 # Clean target
 clean:
-	rm -f $(PROGRAMS) $(OBJS_djumbai-inject) $(OBJS_djumbai-queue) $(OBJS_djumbai-send) $(OBJS_djumbai-clean) $(DIRECTORIES) $(PIPES)
+	rm -f $(PROGRAMS) $(OBJS_djumbai-inject) $(OBJS_djumbai-queue) $(OBJS_djumbai-send) $(OBJS_djumbai-clean) $(OBJS_djumbai-lspawn) $(OBJS_djumbai-local) $(DIRECTORIES) $(PIPES)

@@ -66,3 +66,5 @@ qmails (send)
 # TODO
 
 * bash para criar users e meter UIDs num ficheiro apenas com permissoes de read 
+
+* tirar SOLANGE ROIS E SURUBA
