@@ -67,6 +67,8 @@ int parseUID(const string &input) {
 
 int main(){
 
+    uid_t original_uid = geteuid();
+
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
 
@@ -91,13 +93,13 @@ int main(){
         cout << "Esperando por dados no pipe...\n";
         int fd0 = open(pipe_name_spawn0, O_RDWR);
         if (fd0 == -1) {
-            cerr << "Erro ao abrir o pipe.\n";
+            cerr << "Erro ao abrir o pipe0.\n";
             return 1;
         }
 
         int fd1 = open(pipe_name_spawn1, O_RDWR);
         if (fd1 == -1) {
-            cerr << "Erro ao abrir o pipe.\n";
+            cerr << "Erro ao abrir o pipe1.\n";
             return 1;
         }
 
@@ -123,6 +125,7 @@ int main(){
         // Imprime os dados recebidos e o UID do processo remoto
         cout << "Dados recebidos do pipe: " << buffer << endl;
         cout << "UID do processo que enviou o pipe: " << uid << endl; 
+        cout << "UID do processo que enviou o pipe: " << getuid() << endl;
 
         close(fd0);
 
@@ -142,7 +145,9 @@ int main(){
         } // se o uid nao for valido
 
         // Mudar o UID do processo para o UID do utilizador
-        setuid(id);
+        // setuid(id);
+
+        cout << "UID mudado para: " << getuid() << endl;
         
         int input_pipe[2];
         int output_pipe[2];
@@ -184,6 +189,7 @@ int main(){
             close(output_pipe[1]);
 
             // Executar o programa djumbai-local
+            cout << "Executando o programa djumbai-local\n";
             execl("./djumbai-local", "djumbai-local", NULL);
             // // chamar o gajo
             // string command = "sudo -u \\#" + to_string(id) + " ./djumbai-local";//DEBUG: SO PARA TESTES
@@ -198,7 +204,12 @@ int main(){
             close(input_pipe[0]);
             close(output_pipe[1]);
 
+            string uidString = std::to_string(uid);
+            const char *uidCharPtr = uidString.c_str();
+
+
             // Escrever o email no pipe de input
+            write(input_pipe[1], uidCharPtr, sizeof(uid_t));
             write(input_pipe[1], email, sizeof(buffer));
 
             // Fechar pipe no fim de escrita
@@ -218,33 +229,39 @@ int main(){
             // Esperar pelo processo filho
             int status;
             waitpid(pid, &status, 0);
-        }
+        
 
-        // voltar ao user root
-        setuid(0);
+            // // voltar ao user root
+            // if (setuid(original_uid) == -1) {
+            //     cerr << "Failed to set UID back to root: " << strerror(errno) << endl;
+            //     return 1;
+            // }
+            // cout << "2 - UID mudado para: " << getuid() << endl;
 
-        string message_err = "Erro ao remover ficheiro!";
-        string message_ok = "Ficheiro removido com sucesso!";
-        if (err)
-        {
-            const char* message_p = message_err.c_str();
-            ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
-            if (bytesWritten == -1) {
-                std::cerr << "Erro ao escrever no pipe.\n";
-                close(fd1);
-                return 1;
+
+            string message_err = "Erro ao remover ficheiro!";
+            string message_ok = "Ficheiro removido com sucesso!";
+            if (err)
+            {
+                const char* message_p = message_err.c_str();
+                ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
+                if (bytesWritten == -1) {
+                    std::cerr << "Erro ao escrever no pipe.\n";
+                    close(fd1);
+                    return 1;
+                }
+            } else {
+                const char* message_p = message_ok.c_str();
+                ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
+                if (bytesWritten == -1) {
+                    std::cerr << "Erro ao escrever no pipe.\n";
+                    close(fd1);
+                    return 1;
+                }
             }
-        }else{
-            const char* message_p = message_ok.c_str();
-            ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
-            if (bytesWritten == -1) {
-                std::cerr << "Erro ao escrever no pipe.\n";
-                close(fd1);
-                return 1;
-            }
-        }
 
-        close(fd1);
+            close(fd1);
+        }
 
     }
 

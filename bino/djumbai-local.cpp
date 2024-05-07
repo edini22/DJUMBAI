@@ -25,7 +25,7 @@ int createFolder(const char * path) {
     }
     else
     {
-        if (mkdir(path, 0777) == 0)
+        if (mkdir(path, 0700) == 0)
         {
             std::cout << "Folder created successfully!" << std::endl;
         }
@@ -41,10 +41,17 @@ int createFolder(const char * path) {
 
 int main() {
 
-    
+    char * uid_charp;
     char buffer[1024];
 
+    cin.read(uid_charp, sizeof(uid_t));
     cin.read(buffer, 1024);
+
+    string uidString = uid_charp;
+    uid_t uid = static_cast<uid_t>(stoul(uidString));
+
+    setuid(uid);
+
     cout << "Received message: " << buffer << endl;
 
     //print my uid
@@ -57,12 +64,9 @@ int main() {
         return 1;
     }
 
-    char parentDir[1024];
-    strcpy(parentDir, dirname(cwd));
-    string parentDirStr = parentDir;
-    const string folder_dir = parentDirStr + "/users/" + to_string(getuid());
-    const string cur_dir = parentDirStr + "/users/" + to_string(getuid()) + "/cur";
-    const string new_dir = parentDirStr + "/users/" + to_string(getuid()) + "/new";
+    const string folder_dir = "/var/DJUMBAI/users/" + to_string(getuid());
+    const string cur_dir = "/var/DJUMBAI/users/" + to_string(getuid()) + "/cur";
+    const string new_dir = "/var/DJUMBAI/users/" + to_string(getuid()) + "/new";
     const char *folderPath = folder_dir.c_str();
     const char *curPath = cur_dir.c_str();
     const char *newPath = new_dir.c_str();
@@ -76,7 +80,7 @@ int main() {
     createFolder(curPath);
     createFolder(newPath);
     
-    
+    //TODO: create a file with the message
 
     return 0;
 }

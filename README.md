@@ -65,6 +65,7 @@ qmails (send)
 
 # TODO
 
-* bash para criar users e meter UIDs num ficheiro apenas com permissoes de read 
+* bash para criar users e meter UIDs num ficheiro apenas com permissoes de read :
+    - criar pasta como root -> /var/DJUMBAI com chmod 777
 
 * tirar SOLANGE ROIS E SURUBA

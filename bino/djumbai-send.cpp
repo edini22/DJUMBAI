@@ -187,6 +187,7 @@ int main() {
                                 continue;
                             } else {
                                 int int_receiver_uid = parseUID(receiver_uid);
+                                cout << "Int Receiver UID: " << int_receiver_uid << endl;
                                 
                                 string mess_path = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai"; 
                                 ifstream mess_file(mess_path);
