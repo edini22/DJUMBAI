@@ -6,6 +6,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <sys/wait.h> // Add this line to include the header file
 
 using namespace std;
 using namespace filesystem;
@@ -128,7 +129,10 @@ int main(){
         //TODO: Mudar para o user recetor e espetar a mensagem na pasta correta
         // devolve se foi bem executado ou nao
         bool err = false;
-        
+
+        string buf = buffer;
+        const char * email = buf.c_str();
+
         string str(buffer);
         cout << "UID: " << parseUID(buffer) << endl;
         uid_t id = parseUID(buffer);
@@ -137,13 +141,87 @@ int main(){
             //TODO: fazer qualquer coisa
         } // se o uid nao for valido
 
-        // chamar o gajo
-        string command = "sudo -u \\#" + to_string(id) + " ./djumbai-local";//DEBUG: SO PARA TESTES
-        const char* command_c = command.c_str();
-
-        cout << system(command_c) << endl;
+        // Mudar o UID do processo para o UID do utilizador
+        setuid(id);
         
+        int input_pipe[2];
+        int output_pipe[2];
 
+        // Criação dos pipes de input e output
+        if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1)
+        {
+            cerr << "Error creating pipes\n";
+            return 1;
+        }
+
+        pid_t pid = fork();
+        if (pid == -1)
+        {
+            cerr << "Failed to fork\n";
+            return 1;
+        }
+        if (pid == 0)
+        {
+            // Fechar as extremidades não utilizadas dos pipes
+            close(input_pipe[1]);
+            close(output_pipe[0]);
+
+            // Uso de file descriptors para input e output(troca)
+            if (dup2(input_pipe[0], STDIN_FILENO) == -1)
+            {
+                cerr << "Failed to duplicate input file descriptor\n";
+                return 1;
+            }
+
+            if (dup2(output_pipe[1], STDOUT_FILENO) == -1)
+            {
+                cerr << "Failed to duplicate output file descriptor\n";
+                return 1;
+            }
+
+            // Fechar os file descriptors não utilizados
+            close(input_pipe[0]);
+            close(output_pipe[1]);
+
+            // Executar o programa djumbai-local
+            execl("./djumbai-local", "djumbai-local", NULL);
+            // // chamar o gajo
+            // string command = "sudo -u \\#" + to_string(id) + " ./djumbai-local";//DEBUG: SO PARA TESTES
+            // const char* command_c = command.c_str();
+
+            //cout << system(command_c) << endl;
+            
+        }
+        else
+        {
+            // Fechar as extremidades não utilizadas dos pipes
+            close(input_pipe[0]);
+            close(output_pipe[1]);
+
+            // Escrever o email no pipe de input
+            write(input_pipe[1], email, sizeof(buffer));
+
+            // Fechar pipe no fim de escrita
+            close(input_pipe[1]);
+
+            //==============================================
+
+            char buffer[1024];
+            ssize_t bytesRead;
+            while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0)
+            {
+                buffer[bytesRead] = '\0';
+                cout << "DJUMBAI-QUEUE: " << buffer;
+            }
+            close(output_pipe[0]);
+
+            // Esperar pelo processo filho
+            int status;
+            waitpid(pid, &status, 0);
+        }
+
+        // voltar ao user root
+        setuid(0);
 
         string message_err = "Erro ao remover ficheiro!";
         string message_ok = "Ficheiro removido com sucesso!";
