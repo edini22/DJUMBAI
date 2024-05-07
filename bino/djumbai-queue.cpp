@@ -12,6 +12,7 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+// Estrutura de mensagem
 struct Message
 {
     char sender[25];
@@ -20,7 +21,7 @@ struct Message
     char subject[201];
 };
 
-// Deserialize bytes to struct
+// Deserializar bytes para estrutura
 void deserialize(const char *buffer, Message &obj)
 {
     memcpy(&obj, buffer, sizeof(Message));
@@ -33,8 +34,10 @@ int main()
     Message msg;
     char buffer[sizeof(Message)];
 
+    // Ler a mensagem enviada pelo DJUMBAI-INJECT
     cin.read(buffer, sizeof(Message));
 
+    // Deserialização
     deserialize(buffer, msg);
 
     string message = msg.message;
@@ -44,10 +47,10 @@ int main()
 
     // Exibe as strings recebidas
     cout << "============================" << endl;
-    cout << "Message: " << msg.message << endl;
-    cout << "Sender: " << msg.sender << endl;
-    cout << "Receiver: " << msg.receiver << endl;
-    cout << "Subject: " << msg.subject << endl;
+    cout << "Message: " << message << endl;
+    cout << "Sender: " << sender << endl;
+    cout << "Receiver: " << receiver << endl;
+    cout << "Subject: " << subject << endl;
     cout << "============================" << endl;
 
     pid_t pid = getpid();
@@ -55,7 +58,7 @@ int main()
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL)
     {
-        std::cerr << "Erro ao obter o diretório atual." << std::endl;
+        std::cerr << "Error getting current directory." << std::endl;
         return 1;
     }
 
@@ -76,7 +79,7 @@ int main()
         return 1;
     }
 
-    // Write the message to the file
+    // Escrita da mensagem em ficheiro na diretoria /queue/mess
     file << message;
     file.close();
 
