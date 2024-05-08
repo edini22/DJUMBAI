@@ -15,31 +15,27 @@ int main() {
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 
-    mkfifo(pipe_name_clean0, 0600);
-    mkfifo(pipe_name_clean1, 0600);
-
     while (true) {
-        cout << "Esperando por dados no pipe...\n";
+        cout << "CLEAN: Esperando por dados no pipe...\n";
         int fd0 = open(pipe_name_clean0, O_RDWR);
         if (fd0 == -1) {
-            cerr << "Erro ao abrir o pipe.\n";
+            cerr << "CLEAN: Erro ao abrir o pipe.\n";
             return 1;
         }
 
         int fd1 = open(pipe_name_clean1, O_RDWR);
         if (fd1 == -1) {
-            cerr << "Erro ao abrir o pipe.\n";
+            cerr << "CLEAN: Erro ao abrir o pipe.\n";
             return 1;
         }
 
-        cout << "Pipe aberto com sucesso.\n";
 
         char buffer[1024];
         ssize_t bytesRead;
 
         bytesRead = read(fd0, buffer, sizeof(buffer));
         if (bytesRead == -1) {
-            cerr << "Erro ao ler do pipe.\n";
+            cerr << "CLEAN: Erro ao ler do pipe.\n";
             close(fd0);
             continue; // Continue para a próxima iteração do loop
         }
@@ -47,7 +43,7 @@ int main() {
         // Obtém o UID do processo que enviou o pipe (exemplo)
         struct stat st;
         if (fstat(fd0, &st) == -1) {
-            cerr << "Erro ao obter informações do pipe.\n";
+            cerr << "CLEAN: Erro ao obter informações do pipe.\n";
             close(fd0);
             continue; // Continue para a próxima iteração do loop
         }
@@ -55,8 +51,8 @@ int main() {
 
         close(fd0);
         // Imprime os dados recebidos e o UID do processo remoto
-        cout << "Dados recebidos do pipe: " << buffer << endl;
-        cout << "UID do processo que enviou o pipe: " << uid << endl; 
+        cout << "CLEAN: Dados recebidos do pipe: " << buffer << endl;
+        cout << "CLEAN: UID do processo que enviou o pipe: " << uid << endl; 
 
         //TODO: este uid tem que ser igual ao uid do qmails que tem que estar num ficheiro
         
@@ -66,7 +62,7 @@ int main() {
         bool err = false;
         while (getline(iss, path))
         {
-            cout << "Removing: "<< path << endl;
+            cout << "CLEAN: Removing: "<< path << endl;
             if (!remove(path))
             {
                 err = true;
@@ -80,15 +76,15 @@ int main() {
             const char* message_p = message_err.c_str();
             ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
             if (bytesWritten == -1) {
-                std::cerr << "Erro ao escrever no pipe.\n";
+                cerr << "Erro ao escrever no pipe.\n";
                 close(fd1);
-                return 1;
+                return 1;//TODO: VER ESTE RETURN
             }
         }else{
             const char* message_p = message_ok.c_str();
             ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
             if (bytesWritten == -1) {
-                std::cerr << "Erro ao escrever no pipe.\n";
+                cerr << "Erro ao escrever no pipe.\n";
                 close(fd1);
                 return 1;
             }

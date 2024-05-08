@@ -23,12 +23,12 @@ bool folderExists(const char *folderPath) {
 int createFolder(const char * path) {
 
     if (folderExists(path)){
-        std::cout << "Folder already exists. Skipping creation." << std::endl;
+        cout << "LOCAL: Folder already exists. Skipping creation." << endl;
     }else{
         if (mkdir(path, 0700) == 0){
-            std::cout << "Folder created successfully!" << std::endl;
+            cout << "LOCAL: Folder created successfully!" << endl;
         }else{
-            std::cerr << "Error creating folder!" << std::endl;
+            cerr << "LOCAL: Error creating folder!" << endl;
             return 1;
         }
     }
@@ -37,20 +37,20 @@ int createFolder(const char * path) {
 
 int main(int argc, char *argv[]) {
 
-    cout << "LOCAL process UID: " << getuid() << endl;
+    cout << "LOCAL: process UID: " << getuid() << endl;
     
     // recebe email por parametro 
     if (argc != 2) {
-        cerr << "Número de argumentos inválido.\n";
+        cerr << "LOCAL: Número de argumentos inválido.\n";
         return 1;
     }
     
     char *email = argv[1];
-    cout << "Email: " << email << endl;
+    cout << "LOCAL: Email: " << email << endl;
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        cerr << "Erro ao obter o diretório atual." << endl;
+        cerr << "LOCAL: Erro ao obter o diretório atual." << endl;
         return 1;
     }
 
@@ -62,9 +62,9 @@ int main(int argc, char *argv[]) {
     const char *curPath = cur_dir.c_str();
     const char *newPath = new_dir.c_str();
 
-    cout << "Folder path: " << folderPath << endl;
-    cout << "Cur path: " << curPath << endl;
-    cout << "New path: " << newPath << endl;
+    cout << "LOCAL: Folder path: " << folderPath << endl;
+    cout << "LOCAL: Cur path: " << curPath << endl;
+    cout << "LOCAL: New path: " << newPath << endl;
 
     // Check if the folder already exists
     createFolder(folderPath);
@@ -77,16 +77,16 @@ int main(int argc, char *argv[]) {
     // get pid
     pid_t pid = getpid();
 
-    cout << "Current time: " << now << endl;
-    cout << "PID: " << pid << endl;
+    cout << "LOCAL: Current time: " << now << endl;
+    cout << "LOCAL: PID: " << pid << endl;
 
     // create file 
     string file_path = "/var/DJUMBAI/users/" + to_string(getuid()) + "/new/" + to_string(now) + "." + to_string(pid) + ".mdjumbai";
-    cout << "File path: " << file_path << endl;
+    cout << "LOCAL: File path: " << file_path << endl;
 
     ofstream file(file_path);
     if (!file.is_open()) {
-        cerr << "Erro ao criar ficheiro." << endl;
+        cerr << "LOCAL: Erro ao criar ficheiro." << endl;
         return 1;
     }
 

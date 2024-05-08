@@ -43,13 +43,13 @@ int main(){
 
     // Criação dos pipes de input e output
     if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1){
-        cerr << "Error creating pipes\n";
+        cerr << "INJECT: Error creating pipes\n";
         return 1;
     }
 
     pid_t pid = fork();
     if (pid == -1){
-        cerr << "Failed to fork\n";
+        cerr << "INJECT: Failed to fork\n";
         return 1;
     }
 
@@ -61,12 +61,12 @@ int main(){
         
         // Uso de file descriptors para input e output(troca)
         if (dup2(input_pipe[0], STDIN_FILENO) == -1){
-            cerr << "Failed to duplicate input file descriptor\n";
+            cerr << "INJECT: Failed to duplicate input file descriptor\n";
             return 1;
         }
 
         if (dup2(output_pipe[1], STDOUT_FILENO) == -1){
-            cerr << "Failed to duplicate output file descriptor\n";
+            cerr << "INJECT: Failed to duplicate output file descriptor\n";
             return 1;
         }
 
@@ -75,9 +75,9 @@ int main(){
         close(output_pipe[1]);
 
         // Executar o programa djumbai-queue
-        execl("./djumbai-queue", "djumbai-queue", NULL);
+        execl("/var/DJUMBAI/bino/djumbai-queue", "djumbai-queue", NULL);
 
-        cerr << "Failed to execute the program\n";
+        cerr << "INJECT: Failed to execute the program inject\n";
         return 1;
 
     }else{   
@@ -110,10 +110,10 @@ int main(){
 
         // Validar o tamanho do assunto
         if (subjet.length() <= 0 || subjet.length() > 200){
-            cerr << "Input message must have size between 0 and 200";
+            cerr << "INJECT: Input message must have size between 0 and 200";
             return 1;
         }
-        cout << "Subjet inject: " << subjet << endl;
+        
 
         // Guardar na estrutura da mensagem
         strcpy(msg.subject, subjet.c_str()); 
@@ -128,7 +128,7 @@ int main(){
 
         // Validar o tamanho da mensagem
         if (message.length() <= 0 || message.length() > 512){
-            cerr << "Input message must have size between 0 and 512";
+            cerr << "INJECT: Input message must have size between 0 and 512";
             return 1;
         }
 

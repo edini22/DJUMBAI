@@ -17,10 +17,10 @@ bool validate_uid(const uid_t uid) {
     struct passwd *pw = getpwuid(uid);
 
     if (pw != NULL) {
-        cout << "O UID " << uid << " corresponde ao usuário: " << pw->pw_name << endl;
+        cout << "LSPAWN: O UID " << uid << " corresponde ao usuário: " << pw->pw_name << endl;
         return true;
     } else {
-        cout << "UID " << uid << " não corresponde a nenhum usuário válido." << endl;
+        cout << "LSPAWN: UID " << uid << " não corresponde a nenhum usuário válido." << endl;
         return false;
     }
 }
@@ -60,13 +60,10 @@ int main(){
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
     
-    mkfifo(pipe_name_spawn0, 0600); //Read
-    mkfifo(pipe_name_spawn1, 0600); //Write
-    
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        cerr << "Erro ao obter o diretório atual." << endl;
+        cerr << "LSPAWN: Erro ao obter o diretório atual." << endl;
         return 1;
     }
 
@@ -74,21 +71,21 @@ int main(){
     strcpy(parentDir, dirname(cwd));
     string parentDirStr = parentDir;
 
-    printf("Parent directory: %s\n", parentDir);
+    printf("LSPAWN: Parent directory: %s\n", parentDir);
 
  
     while (true)
     {
-        cout << "Esperando por dados no pipe...\n";
+        cout << "LSPAWN: Esperando por dados no pipe...\n";
         int fdspawn0 = open(pipe_name_spawn0, O_RDWR);
         if (fdspawn0 == -1) {
-            cerr << "Erro ao abrir o pipe0.\n";
+            cerr << "LSPAWN: Erro ao abrir o pipe0.\n";
             return 1;
         }
 
         int fdspawn1 = open(pipe_name_spawn1, O_RDWR);
         if (fdspawn1 == -1) {
-            cerr << "Erro ao abrir o pipe1.\n";
+            cerr << "LSPAWN: Erro ao abrir o pipe1.\n";
             return 1;
         }
 
@@ -97,22 +94,22 @@ int main(){
 
         bytesRead = read(fdspawn0, buffer, sizeof(buffer));
         if (bytesRead == -1) {
-            cerr << "Erro ao ler do pipe.\n";
+            cerr << "LSPAWN: Erro ao ler do pipe.\n";
             close(fdspawn0);
             continue; // Continue para a próxima iteração do loop
         }
 
         struct stat st;
         if (fstat(fdspawn0, &st) == -1) {
-            cerr << "Erro ao obter informações do pipe.\n";
+            cerr << "LSPAWN: Erro ao obter informações do pipe.\n";
             close(fdspawn0);
             continue; // Continue para a próxima iteração do loop
         }
         uid_t uid = st.st_uid;
-        cout << "UID do processo que enviou o pipe[spawn]: " << uid << endl;
+        cout << "LSPAWN: UID do processo que enviou o pipe[spawn]: " << uid << endl;
 
         // Imprime os dados recebidos e o UID do processo remoto
-        cout << "Dados recebidos do pipe: " << buffer << endl;
+        cout << "LSPAWN: Dados recebidos do pipe: " << buffer << endl;
 
         close(fdspawn0);
 
@@ -123,45 +120,45 @@ int main(){
         const char * email = buf.c_str();
 
         string str(buffer);
-        cout << "UID: " << parseUID(buffer) << endl;
+        cout << "LSPAWN: UID: " << parseUID(buffer) << endl;
         uid_t id = parseUID(buffer);
         if (!validate_uid(id)) {
-            cout << "UID inválido" << endl;
+            cout << "LSPAWN: UID inválido" << endl;
             //TODO: fazer qualquer coisa
         } // se o uid nao for valido
 
         
         pid_t pid = fork();
         if (pid == -1) {
-            cerr << "Failed to fork\n";
+            cerr << "LSPAWN: Failed to fork\n";
             return 1;
         }
 
         if (pid == 0) {
 
-            cout << "ID: " << id << endl;
+            cout << "LSPAWN: ID: " << id << endl;
             setuid(id);
             
 
-            cout << "UID do processo PID0: " << getuid() << endl;
+            cout << "LSPAWN: UID do processo PID0: " << getuid() << endl;
 
-            cout << "Executando o programa djumbai-local\n";
+            cout << "LSPAWN: Executando o programa djumbai-local\n";
 
-            execl("./djumbai-local", "djumbai-local", email, NULL);
+            execl("/var/DJUMBAI/bino/djumbai-local", "djumbai-local", email, NULL);
 
             
-            cerr << "Failed to execute the program\n";
+            cerr << "LSPAWN: Failed to execute the program lspawn\n";
             return 1;
         }
         else {
-            cout << "Programa djumbai-local teste\n";
+            cout << "LSPAWN: Programa djumbai-local teste\n";
 
             //==============================================
 
             // Esperar pelo processo filho
             int status;
             waitpid(pid, &status, 0);
-            cout << "Processo filho terminou com status: " << status << endl;
+            cout << "LSPAWN: Processo filho terminou com status: " << status << endl;
             if (status != 0) {
                 err = true;
             }
@@ -173,7 +170,7 @@ int main(){
                 const char* message_p = message_err.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
-                    std::cerr << "Erro ao escrever no pipe.\n";
+                    cerr << "LSPAWN: Erro ao escrever no pipe.\n";
                     close(fdspawn1);
                     return 1;
                 }
@@ -181,12 +178,12 @@ int main(){
                 const char* message_p = message_ok.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
-                    std::cerr << "Erro ao escrever no pipe.\n";
+                    cerr << "LSPAWN: Erro ao escrever no pipe.\n";
                     close(fdspawn1);
                     return 1;
                 }
             }
-            cout << "Escrevi no pipe fdspawn1: " << message_ok << endl;
+            cout << "LSPAWN: Escrevi no pipe fdspawn1: " << message_ok << endl;
 
             close(fdspawn1);
         }
