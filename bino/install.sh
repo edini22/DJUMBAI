@@ -108,3 +108,6 @@ echo -e "$uid_users" >> "$BIN_DIR/uids.txt"
 
 
 echo "Install concluído!"
+
+ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject
+ln -s /var/DJUMBAI/boot/djumbai-start /usr/local/bin/djumbai-start

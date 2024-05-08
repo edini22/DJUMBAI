@@ -65,6 +65,8 @@ qmails (send)
 
 # TODO
 
+* handle SIGINT no djumbai-start para matar os filhos e fechar os pipes
+
 * ERRO de criar uma pasta com o uid de outra pessoa
 
 * resolver TODO'S
@@ -75,4 +77,4 @@ qmails (send)
 
 * comunicação síncrona
 
-* 
+* Proteger input do Inject
