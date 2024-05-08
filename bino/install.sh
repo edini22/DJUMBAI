@@ -29,13 +29,12 @@ usermod -aG "$group2" "$users"
 uid_userq=$(get_user_uid "$userq")
 uid_users=$(get_user_uid "$users")
 
-# Escrever UIDs num arquivo
-echo -e "$uid_userq" > uids.txt
-echo -e "$uid_users" >> uids.txt
 
 echo "Uids dos utilizadores foram escritos no arquivo uids.txt."
 
+
 # Criar diretório de instalação
+echo "A criar diretorias bin ..."
 mkdir -p "$BIN_DIR"
 
 cp ./djumbai-inject ./djumbai-queue ./djumbai-send ./djumbai-clean ./djumbai-lspawn ./djumbai-local "$BIN_DIR"
@@ -44,6 +43,7 @@ chmod 701 "$BIN_DIR/djumbai-inject"
 
 chown "$userq" "$BIN_DIR/djumbai-queue"
 chmod 701 "$BIN_DIR/djumbai-queue"
+chmod u+s "$BIN_DIR/djumbai-queue"
 
 chown "$users" "$BIN_DIR/djumbai-send"
 chmod 700 "$BIN_DIR/djumbai-send"
@@ -55,19 +55,25 @@ chmod 700 "$BIN_DIR/djumbai-lspawn"
 
 chmod 701 "$BIN_DIR/djumbai-local"
 
+echo "Diretorias bin criadas!"
+
 # Criar diretório boot
+echo "A cria diretoria boot ..."
 
 mkdir -p "$BOOT_DIR"
 
 cp ../boot/djumbai-start "$BOOT_DIR"
 chmod 700 "$BOOT_DIR/djumbai-start"
 
+echo "Diretoria boot criada!"
+
 # Criar diretório queue
+
+echo "A criar diretorias queue ..."
 
 mkdir -p "$QUEUE_DIR"
 chown "$userq":"$group1" "$QUEUE_DIR"
-chmod 550 "$QUEUE_DIR"
-
+chmod 555 "$QUEUE_DIR"
 mkdir -p "$QUEUE_DIR/info"
 chown "$users" "$QUEUE_DIR/info"
 chmod 700 "$QUEUE_DIR/info"
@@ -89,11 +95,23 @@ chown "$userq":"$group1" "$QUEUE_DIR/mess"
 chmod 350 "$QUEUE_DIR/mess"
 
 mkdir -p "$QUEUE_DIR/todo"
-chown "$userq":"$group1" "$QUEUE_DIR/todo"
+chown "$userq":"$users" "$QUEUE_DIR/todo"
 chmod 350 "$QUEUE_DIR/todo"
 
+echo "Diretorias queue criadas!"
 
 # Criar diretório users
 
+echo "A criar diretoria users ..."
+
 mkdir -p "$USERS_DIR"
 chmod 707 "$USERS_DIR"
+
+echo "Diretoria users criadas!"
+
+# Escrever UIDs num arquivo
+echo -e "$uid_userq" > "$BIN_DIR/uids.txt"
+echo -e "$uid_users" >> "$BIN_DIR/uids.txt"
+
+
+echo "Install concluído!"

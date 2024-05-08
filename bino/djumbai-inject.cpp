@@ -75,7 +75,7 @@ int main(){
         close(output_pipe[1]);
 
         // Executar o programa djumbai-queue
-        execl("/var/DJUMBAI/bino/djumbai-queue", "djumbai-queue", NULL);
+        execl("/var/DJUMBAI/bin/djumbai-queue", "djumbai-queue", NULL);
 
         cerr << "INJECT: Failed to execute the program inject\n";
         return 1;

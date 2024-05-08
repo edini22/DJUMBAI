@@ -27,8 +27,12 @@ void deserialize(const char *buffer, Message &obj)
     memcpy(&obj, buffer, sizeof(Message));
 }
 
-int main()
-{
+int main() {
+
+
+
+    setuid(1002);//TODO: ir buscar ao file
+    cout <<"uid: " <<getuid() << endl;
     string envelope;
 
     Message msg;

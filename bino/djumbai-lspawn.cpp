@@ -144,7 +144,7 @@ int main(){
 
             cout << "LSPAWN: Executando o programa djumbai-local\n";
 
-            execl("/var/DJUMBAI/bino/djumbai-local", "djumbai-local", email, NULL);
+            execl("/var/DJUMBAI/bin/djumbai-local", "djumbai-local", email, NULL);
 
             
             cerr << "LSPAWN: Failed to execute the program lspawn\n";

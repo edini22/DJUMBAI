@@ -95,6 +95,8 @@ bool Rois(const char * message,const char * pipe0, const char * pipe1){
 
 int main() {
 
+    cout << "uid_send: " << getuid() << endl;
+
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 
@@ -122,14 +124,14 @@ int main() {
 
     string folderPath = parentDirStr + "/queue/todo";
     
-    if (!is_directory(folderPath)) {
-        cerr << "SEND: Erro: O caminho não é um diretório válido.\n";
-        return 1;
-    }
+    
+
+    cout << "SEND: Iniciando o envio de mensagens...\n";
 
     while (true){
 
         for (const auto& entry : directory_iterator(folderPath)) {
+            cout << "SEND: Verificando o arquivo: " << entry.path() << "\n";
             if (is_regular_file(entry)) {
                 ifstream file(entry.path());
                 if (file.is_open()) {
