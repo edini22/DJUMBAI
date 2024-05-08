@@ -78,22 +78,22 @@ chmod 700 "$QUEUE_DIR/local"
 
 mkdir -p "$QUEUE_DIR/intd"
 chown "$userq":"$group1" "$QUEUE_DIR/intd"
-chmod 340 "$QUEUE_DIR/intd"
+chmod 350 "$QUEUE_DIR/intd"
 
 mkdir -p "$QUEUE_DIR/pid"
 chown "$userq":"$group1" "$QUEUE_DIR/pid"
-chmod 340 "$QUEUE_DIR/pid"
+chmod 350 "$QUEUE_DIR/pid"
 
 mkdir -p "$QUEUE_DIR/mess"
 chown "$userq":"$group1" "$QUEUE_DIR/mess"
-chmod 340 "$QUEUE_DIR/mess"
+chmod 350 "$QUEUE_DIR/mess"
 
 mkdir -p "$QUEUE_DIR/todo"
 chown "$userq":"$group1" "$QUEUE_DIR/todo"
-chmod 340 "$QUEUE_DIR/todo"
+chmod 350 "$QUEUE_DIR/todo"
 
 
 # Criar diretório users
 
 mkdir -p "$USERS_DIR"
-chmod 706 "$USERS_DIR"
+chmod 707 "$USERS_DIR"

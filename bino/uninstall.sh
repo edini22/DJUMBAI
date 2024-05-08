@@ -9,10 +9,10 @@ group1="xereca-roxa"
 group2="buceta"
 
 # Remover os usuários
-sudo userdel -r "$userq"
-sudo userdel -r "$users"
-sudo groupdel -r "$group1"
-sudo groupdel -r "$group2"
+userdel -r "$userq"
+userdel -r "$users"
+groupdel "$group1"
+groupdel "$group2"
 
 echo "Utilizadores removidos com sucesso."
 
