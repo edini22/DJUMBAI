@@ -69,3 +69,5 @@ qmails (send)
     - criar pasta como root -> /var/DJUMBAI com chmod 777
 
 * tirar SOLANGE ROIS E SURUBA
+
+* ERRO de criar uma pasta com o uid de outra pessoa

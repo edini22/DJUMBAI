@@ -1,11 +1,21 @@
 #!/bin/bash
 
+
+INSTALL_DIR="/var/DJUMBAI"
 # Usuários a serem removidos
-user1="djumbaiq"
-user2="djumbais"
+userq="djumbaiq"
+users="djumbais"
+group1="xereca-roxa"
+group2="buceta"
 
 # Remover os usuários
-sudo userdel -r "$user1"
-sudo userdel -r "$user2"
+sudo userdel -r "$userq"
+sudo userdel -r "$users"
+sudo groupdel -r "$group1"
+sudo groupdel -r "$group2"
 
-echo "Usuários removidos com sucesso."
+echo "Utilizadores removidos com sucesso."
+
+rm -r "$INSTALL_DIR"
+
+echo "Pasta DJUMBAI removida com sucesso."

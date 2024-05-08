@@ -35,7 +35,7 @@ int main() {
     pid_t pid_send = fork();
     if (pid_send == 0) {
         // child process
-        setuid(1000);
+        setuid(djumbais);
         execl("/var/DJUMBAI/bino/djumbai-send", "djumbai-send", NULL);
     
     } else {
@@ -43,7 +43,7 @@ int main() {
         pid_t pid_clean = fork();
         if (pid_clean == 0) {
             // child process
-            setuid(1000);
+            setuid(djumbaiq);
             execl("/var/DJUMBAI/bino/djumbai-clean", "djumbai-clean", NULL);
             
         } else {

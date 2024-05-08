@@ -101,11 +101,11 @@ int main() {
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
 
-    mkfifo(pipe_name_clean0, 0600);
-    mkfifo(pipe_name_clean1, 0600);
+    mkfifo(pipe_name_clean0, 0660);
+    mkfifo(pipe_name_clean1, 0660);
     
-    mkfifo(pipe_name_spawn0, 0600);
-    mkfifo(pipe_name_spawn1, 0600);
+    mkfifo(pipe_name_spawn0, 0660);
+    mkfifo(pipe_name_spawn1, 0660);
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
