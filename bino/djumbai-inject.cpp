@@ -4,12 +4,12 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <limits> // Adicione esta linha
 
 using namespace std;
 
 // Estrutura de mensagem
-struct Message
-{
+struct Message{
     char sender[25];
     char receiver[25];
     char message[513];
@@ -17,66 +17,55 @@ struct Message
 };
 
 // Serializar estrutura para bytes
-void serialize(const Message &obj, char *buffer)
-{
+void serialize(const Message &obj, char *buffer){
     std::memcpy(buffer, &obj, sizeof(Message));
 }
 
 // Verificar se o UID é válido
-bool validate_uid(const uid_t uid)
-{
+bool validate_uid(const uid_t uid){
     // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
-    if (pw != NULL)
-    {
+    if (pw != NULL){
         // UID válido
-        std::cout << "UID " << uid << "matches user: " << pw->pw_name << std::endl;
+        std::cout << "UID " << uid << " matches user: " << pw->pw_name << std::endl;
         return true;
-    }
-    else
-    {
+    }else{
         // UID inválido
         std::cout << "UID " << uid << " does not match any valid user." << std::endl;
         return false;
     }
 }
 
-int main()
-{   
+int main(){   
     int input_pipe[2];
     int output_pipe[2];
 
     // Criação dos pipes de input e output
-    if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1)
-    {
+    if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1){
         cerr << "Error creating pipes\n";
         return 1;
     }
 
     pid_t pid = fork();
-    if (pid == -1)
-    {
+    if (pid == -1){
         cerr << "Failed to fork\n";
         return 1;
     }
 
-    if (pid == 0)
-    {
+    if (pid == 0){
         // Fechar as extremidades não utilizadas dos pipes
         close(input_pipe[1]);
         close(output_pipe[0]);
 
         
         // Uso de file descriptors para input e output(troca)
-        if (dup2(input_pipe[0], STDIN_FILENO) == -1)
-        {
+        if (dup2(input_pipe[0], STDIN_FILENO) == -1){
             cerr << "Failed to duplicate input file descriptor\n";
             return 1;
         }
 
-        if (dup2(output_pipe[1], STDOUT_FILENO) == -1)
-        {
+        if (dup2(output_pipe[1], STDOUT_FILENO) == -1){
             cerr << "Failed to duplicate output file descriptor\n";
             return 1;
         }
@@ -90,9 +79,8 @@ int main()
 
         cerr << "Failed to execute the program\n";
         return 1;
-    }
-    else
-    {   
+
+    }else{   
         // Fechar as extremidades não utilizadas dos pipes
         close(input_pipe[0]);
         close(output_pipe[1]);
@@ -106,24 +94,26 @@ int main()
         cin >> id;
 
         // Validar o UID
-        if (!validate_uid(id))
-        {
+        if (!validate_uid(id)){
             return 1;
         }
 
         // Guardar na estrutura da mensagem
         sprintf(msg.receiver, "%d", id); 
 
-        // Obter o assunto da mensagem
+        // Limpar o buffer do cin
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+
         string subjet;
         cout << "Enter a subjet: " << endl;
-        cin >> subjet;
+        getline(cin, subjet);
 
         // Validar o tamanho do assunto
-        if (subjet.length() <= 0 || subjet.length() > 200)
-        {
+        if (subjet.length() <= 0 || subjet.length() > 200){
             cerr << "Input message must have size between 0 and 200";
+            return 1;
         }
+        cout << "Subjet inject: " << subjet << endl;
 
         // Guardar na estrutura da mensagem
         strcpy(msg.subject, subjet.c_str()); 
@@ -132,15 +122,14 @@ int main()
         char word;
         string message;
         cout << "Enter a message:" << endl;
-        while (cin.get(word))
-        {
+        while (cin.get(word)){
             message += word;
         }
 
         // Validar o tamanho da mensagem
-        if (message.length() <= 0 || message.length() > 512)
-        {
+        if (message.length() <= 0 || message.length() > 512){
             cerr << "Input message must have size between 0 and 512";
+            return 1;
         }
 
         // Guardar na estrutura da mensagem
@@ -169,8 +158,7 @@ int main()
 
         char buffer[1024];
         ssize_t bytesRead;
-        while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0)
-        {
+        while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0){
             buffer[bytesRead] = '\0';
             cout << "DJUMBAI-QUEUE: " << buffer;
         }
@@ -180,6 +168,5 @@ int main()
         int status;
         waitpid(pid, &status, 0);
     }
-
     return 0;
 }

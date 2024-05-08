@@ -8,9 +8,24 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <libgen.h> 
+#include <pwd.h>
 
 using namespace std;
 using namespace filesystem;
+
+
+bool validate_uid(const uid_t uid) {
+
+    struct passwd *pw = getpwuid(uid);
+
+    if (pw != NULL) {
+        cout << "O UID " << uid << " corresponde ao usuário: " << pw->pw_name << endl;
+        return true;
+    } else {
+        cout << "UID " << uid << " não corresponde a nenhum usuário válido." << endl;
+        return false;
+    }
+}
 
 int parseUID(const string &str) {
     bool insideBrackets = false;
@@ -126,10 +141,12 @@ int main() {
                     while (getline(file, line)) {
                         if (line == "Solange") {
                             getline(file, line);
-                            sender = line; //TODO:  verificar se o remetente é válido
+                            sender = line;
+                            //validate_uid(parseUID(sender)); //TODO: o que fazer se nao for valido?
                         } else if (line == "Rois") {
                             getline(file, line);
-                            receiver = line; //TODO: verificar se o destinatário é válido
+                            receiver = line; 
+                            //validate_uid(parseUID(receiver));//TODO: o que fazer se nao for valido?
                         } else if (line == "Suruba") {
                             getline(file, line);
                             if (line.length() > 200) {
@@ -176,6 +193,7 @@ int main() {
                     Rois(message_p, pipe_name_clean0, pipe_name_clean1);
 
                     // ------------ LSPAWN ------------
+                    bool spawn_status;
                     ifstream local_file1(local_path);
                     if (local_file1.is_open()) {
                         while (getline(local_file1, line)) {
@@ -212,31 +230,43 @@ int main() {
                                 
                                 const char * message_s = m.c_str();
 
-                                Rois(message_s,pipe_name_spawn0, pipe_name_spawn1);
-                                
+                                spawn_status = Rois(message_s,pipe_name_spawn0, pipe_name_spawn1);
+                                cout << "Respota do lspawn: " << spawn_status << endl;
+
+                                if (!spawn_status) {
+                                    cerr << "Mensagem não enviada!.\n";
+                                    //TODO: O que fazer se a mensagem não for enviada?
+                                }
                             }
                         }
                     }
+                    // faltam aqui umas merdas!!!! se o spawn falhar, devia repetir 3 vezes e se der merda
+                    // nas 3 tem de meter a mensagem numa pasta especial????
+                    if (spawn_status) {
 
-                    string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + parentDirStr + "/queue/local/" + filename_without_extension + ".mdjumbai";
-                    int status = system(sedCommand.c_str());
+                        string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + parentDirStr + "/queue/local/" + filename_without_extension + ".mdjumbai";
+                        int status = system(sedCommand.c_str());
 
-                    cout << "Status: " << status << endl;
+                        cout << "Status: " << status << endl;
 
-                    // Remove the file from the mess folder
-                    message = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai";
-                    const char *message_k = message.c_str();
-                    
-                    Rois(message_k, pipe_name_clean0, pipe_name_clean1);
 
-                    file.close();
+                        // Remove the file from the mess folder
+                        remove(info_path);
+                        remove(local_path);
+                        message = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai";
+                        const char *message_k = message.c_str();
+                        
+                        Rois(message_k, pipe_name_clean0, pipe_name_clean1);
+
+                        file.close();
+                    }
                 } else {
                     cerr << "Erro ao abrir o arquivo: " << entry.path() << "\n";
                 }
             }
         }
 
-        sleep(5);
+        sleep(60);
     }
 
     return 0;
