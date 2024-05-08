@@ -53,7 +53,7 @@ chmod 700 "$BIN_DIR/djumbai-clean"
 
 chmod 700 "$BIN_DIR/djumbai-lspawn"
 
-chmod 701 "$BIN_DIR/djumbai-local"
+chmod 711 "$BIN_DIR/djumbai-local"
 
 echo "Diretorias bin criadas!"
 
@@ -105,7 +105,7 @@ echo "Diretorias queue criadas!"
 echo "A criar diretoria users ..."
 
 mkdir -p "$USERS_DIR"
-chmod 707 "$USERS_DIR"
+chmod 777 "$USERS_DIR"
 
 echo "Diretoria users criadas!"
 

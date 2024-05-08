@@ -67,13 +67,6 @@ int main(){
         return 1;
     }
 
-    char parentDir[1024];
-    strcpy(parentDir, dirname(cwd));
-    string parentDirStr = parentDir;
-
-    printf("LSPAWN: Parent directory: %s\n", parentDir);
-
- 
     while (true)
     {
         cout << "LSPAWN: Esperando por dados no pipe...\n";
@@ -144,10 +137,11 @@ int main(){
 
             cout << "LSPAWN: Executando o programa djumbai-local\n";
 
+            
             execl("/var/DJUMBAI/bin/djumbai-local", "djumbai-local", email, NULL);
 
             
-            cerr << "LSPAWN: Failed to execute the program lspawn\n";
+            cerr << "LSPAWN: Failed to execute the program lspawn\n" << strerror(errno) << endl;
             return 1;
         }
         else {

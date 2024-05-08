@@ -59,21 +59,8 @@ int main() {
 
     pid_t pid = getpid();
 
-    char cwd[1024];
-    if (getcwd(cwd, sizeof(cwd)) == NULL)
-    {
-        std::cerr << "Error getting current directory." << std::endl;
-        return 1;
-    }
-
-    // Obter o caminho da pasta anterior
-    char parentDir[1024];
-    strcpy(parentDir, dirname(cwd));
-    string parentDirStr = parentDir;
-
-    printf("Parent directory: %s\n", parentDir);
-
-    const string path = parentDirStr + "/queue/pid/" + to_string(pid) + ".mdjumbai";
+    
+    const string path = "/var/DJUMBAI/queue/pid/" + to_string(pid) + ".mdjumbai";
     const char *pid_filename = path.c_str();
 
     ofstream file(path); // #TODO: mudar permissoes
@@ -98,7 +85,7 @@ int main() {
     // Exibir o número do inode
     cout << "Número do inode de " << pid_filename << ": " << fileStat.st_ino << endl;
 
-    const string dest_filename = parentDirStr + "/queue/mess/" + to_string(fileStat.st_ino) + ".mdjumbai";
+    const string dest_filename = "/var/DJUMBAI/queue/mess/" + to_string(fileStat.st_ino) + ".mdjumbai";
     const char *dest_dest_filename = dest_filename.c_str();
 
     // move file to mess folder
@@ -118,7 +105,7 @@ int main() {
     envelope = "Solange\n" + sender + "\n" + "Rois\n" + receiver + "\n" + "Suruba\n" + subject + "\n";
 
     int F = 1;
-    const string path_env = parentDirStr + "/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
+    const string path_env = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
     for (int i = 0; i < F; i++)
     {
         ofstream file(path_env); // #TODO: mudar permissoes
@@ -134,11 +121,11 @@ int main() {
     }
 
     // criar link para intd do envelope na pasta todo
-    const string path_todo = parentDirStr + "/queue/todo/";
+    const string path_todo = "/var/DJUMBAI/queue/todo/";
 
-    string link_path = parentDirStr + "/queue/todo/" + to_string(fileStat.st_ino) + ".lnk";
+    string link_path = "/var/DJUMBAI/queue/todo/" + to_string(fileStat.st_ino) + ".lnk";
 
-    const string path_link = parentDirStr + "/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
+    const string path_link = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
 
     printf("Link path: %s\n", link_path.c_str());
 

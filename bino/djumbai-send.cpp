@@ -103,33 +103,26 @@ int main() {
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
 
-    mkfifo(pipe_name_clean0, 0660);
-    mkfifo(pipe_name_clean1, 0660);
-    
-    mkfifo(pipe_name_spawn0, 0660);
-    mkfifo(pipe_name_spawn1, 0660);
-
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
         cerr << "SEND: Erro ao obter o diretório atual." << endl;
         return 1;
     }
 
-    // Obter o caminho da pasta anterior
-    char parentDir[1024];
-    strcpy(parentDir, dirname(cwd));
-    string parentDirStr = parentDir;
-
-    printf("SEND: Parent directory: %s\n", parentDir);
-
-    string folderPath = parentDirStr + "/queue/todo";
+    string folderPath = "/var/DJUMBAI/queue/todo";
     
     
 
     cout << "SEND: Iniciando o envio de mensagens...\n";
+    if (system("ls -la /var/DJUMBAI/queue/todo") == -1) {
+        cerr << "Erro ao executar o comando." << endl;
+        return 1;
+    }
+
+    cout << "SEND: Folder path: " << folderPath << endl;
 
     while (true){
-
+        cout << "UP" << endl;
         for (const auto& entry : directory_iterator(folderPath)) {
             cout << "SEND: Verificando o arquivo: " << entry.path() << "\n";
             if (is_regular_file(entry)) {
@@ -161,8 +154,8 @@ int main() {
                     }
 
                     // delete files if they exist
-                    string info_path = parentDirStr +  "/queue/info/" + filename_without_extension + ".mdjumbai";
-                    string local_path = parentDirStr + "/queue/local/" + filename_without_extension + ".mdjumbai";
+                    string info_path = "/var/DJUMBAI/queue/info/" + filename_without_extension + ".mdjumbai";
+                    string local_path = "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
                     
 
                     if (exists(info_path)) {
@@ -189,11 +182,10 @@ int main() {
                     }
                     
                     //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
-                    string message = parentDirStr + "/queue/todo/" + filename_without_extension + ".lnk" + "\n" + parentDirStr + "/queue/intd/" + filename_without_extension + ".mdjumbai";
+                    string message = "/var/DJUMBAI/queue/todo/" + filename_without_extension + ".lnk" + "\n" + "/var/DJUMB/queue/intd/" + filename_without_extension + ".mdjumbai";
                     const char * message_p = message.c_str();
                     
                     Rois(message_p, pipe_name_clean0, pipe_name_clean1);
-
                     // ------------ LSPAWN ------------
                     bool spawn_status;
                     ifstream local_file1(local_path);
@@ -209,7 +201,7 @@ int main() {
                                 int int_receiver_uid = parseUID(receiver_uid);
                                 cout << "SEND: Int Receiver UID: " << int_receiver_uid << endl;
                                 
-                                string mess_path = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai"; 
+                                string mess_path = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai"; 
                                 ifstream mess_file(mess_path);
                                 ifstream info_file1(info_path);
                                 string m;
@@ -246,7 +238,7 @@ int main() {
                     // nas 3 tem de meter a mensagem numa pasta especial????
                     if (spawn_status) {
 
-                        string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + parentDirStr + "/queue/local/" + filename_without_extension + ".mdjumbai";
+                        string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
                         int status = system(sedCommand.c_str());
 
                         cout << "SEND: Status: " << status << endl;
@@ -255,7 +247,7 @@ int main() {
                         // Remove the file from the mess folder
                         remove(info_path);
                         remove(local_path);
-                        message = parentDirStr + "/queue/mess/" + filename_without_extension + ".mdjumbai";
+                        message = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai";
                         const char *message_k = message.c_str();
                         
                         Rois(message_k, pipe_name_clean0, pipe_name_clean1);
