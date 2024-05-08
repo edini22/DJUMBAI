@@ -14,16 +14,9 @@ get_user_uid() {
 # Criar utilizadores
 userq="djumbaiq"
 users="djumbais"
-group1="xereca-roxa"
-group2="buceta"
 
 useradd "$userq"
 useradd "$users"
-groupadd "$group1"
-usermod -aG "$group1" "$users"
-groupadd "$group2"
-usermod -aG "$group2" "$userq"
-usermod -aG "$group2" "$users"
 
 # Obter UIDs dos utilizadores
 uid_userq=$(get_user_uid "$userq")
@@ -72,7 +65,7 @@ echo "Diretoria boot criada!"
 echo "A criar diretorias queue ..."
 
 mkdir -p "$QUEUE_DIR"
-chown "$userq":"$group1" "$QUEUE_DIR"
+chown "$userq":"$users" "$QUEUE_DIR"
 chmod 555 "$QUEUE_DIR"
 mkdir -p "$QUEUE_DIR/info"
 chown "$users" "$QUEUE_DIR/info"
@@ -83,15 +76,15 @@ chown "$users" "$QUEUE_DIR/local"
 chmod 700 "$QUEUE_DIR/local"
 
 mkdir -p "$QUEUE_DIR/intd"
-chown "$userq":"$group1" "$QUEUE_DIR/intd"
+chown "$userq":"$users" "$QUEUE_DIR/intd"
 chmod 350 "$QUEUE_DIR/intd"
 
 mkdir -p "$QUEUE_DIR/pid"
-chown "$userq":"$group1" "$QUEUE_DIR/pid"
-chmod 350 "$QUEUE_DIR/pid"
+chown "$userq" "$QUEUE_DIR/pid"
+chmod 300 "$QUEUE_DIR/pid"
 
 mkdir -p "$QUEUE_DIR/mess"
-chown "$userq":"$group1" "$QUEUE_DIR/mess"
+chown "$userq":"$users" "$QUEUE_DIR/mess"
 chmod 350 "$QUEUE_DIR/mess"
 
 mkdir -p "$QUEUE_DIR/todo"

@@ -134,15 +134,15 @@ int main() {
                     string line;
                     string sender, receiver, subject;
                     while (getline(file, line)) {
-                        if (line == "Solange") {
+                        if (line == "SENDER") {
                             getline(file, line);
                             sender = line;
                             //validate_uid(parseUID(sender)); //TODO: o que fazer se nao for valido?
-                        } else if (line == "Rois") {
+                        } else if (line == "RECEIVER") {
                             getline(file, line);
                             receiver = line; 
                             //validate_uid(parseUID(receiver));//TODO: o que fazer se nao for valido?
-                        } else if (line == "Suruba") {
+                        } else if (line == "SUBJECT") {
                             getline(file, line);
                             if (line.length() > 200) {
                                 //?????????????

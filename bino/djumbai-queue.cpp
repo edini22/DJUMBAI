@@ -102,7 +102,7 @@ int main() {
     }
 
     // write to file
-    envelope = "Solange\n" + sender + "\n" + "Rois\n" + receiver + "\n" + "Suruba\n" + subject + "\n";
+    envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + receiver + "\n" + "SUBJECT\n" + subject + "\n";
 
     int F = 1;
     const string path_env = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";

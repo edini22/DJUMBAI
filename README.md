@@ -65,9 +65,14 @@ qmails (send)
 
 # TODO
 
-* bash para criar users e meter UIDs num ficheiro apenas com permissoes de read :
-    - criar pasta como root -> /var/DJUMBAI com chmod 777
-
-* tirar SOLANGE ROIS E SURUBA
-
 * ERRO de criar uma pasta com o uid de outra pessoa
+
+* resolver TODO'S
+
+* criar grupos de utilizadores
+
+* interface para os users verem as mensagens e ao ler a mensagem marcar como lida ( mudar de new para cur)
+
+* comunicação síncrona
+
+* 
