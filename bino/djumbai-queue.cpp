@@ -10,7 +10,7 @@
 #include <string.h>
 
 using namespace std;
-namespace fs = std::filesystem;
+namespace fs = filesystem;
 
 // Estrutura de mensagem
 struct Message
@@ -79,7 +79,7 @@ int main() {
     // Usando lstat para obter informações sobre o arquivo, incluindo o inode
     if (lstat(pid_filename, &fileStat) == -1)
     {
-        std::cerr << "Erro ao obter informações sobre o arquivo.\n";
+        cerr << "Erro ao obter informações sobre o arquivo.\n";
         return 1;
     }
     // Exibir o número do inode
@@ -131,7 +131,7 @@ int main() {
 
     if (symlink(path_link.c_str(), (link_path).c_str()) == -1)
     {
-        std::cerr << "Erro ao criar o link simbólico." << std::endl;
+        cerr << "Erro ao criar o link simbólico." << endl;
         return 1;
     }
 

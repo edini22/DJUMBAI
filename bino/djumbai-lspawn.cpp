@@ -25,6 +25,26 @@ bool validate_uid(const uid_t uid) {
     }
 }
 
+bool folderExists(const char *folderPath) {
+    struct stat info;
+    return stat(folderPath, &info) == 0 && S_ISDIR(info.st_mode);
+}
+
+int createFolder(const char * path) {
+
+    if (folderExists(path)){
+        cout << "LSPAWN: Folder already exists. Skipping creation." << endl;
+    }else{
+        if (mkdir(path, 0700) == 0){
+            cout << "LSPAWN: Folder created successfully!" << endl;
+        }else{
+            cerr << "LSPAWN: Error creating folder!" << endl;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int parseUID(const string &input) {
 
     size_t pos = input.find('\n');
@@ -120,6 +140,10 @@ int main(){
             //TODO: fazer qualquer coisa
         } // se o uid nao for valido
 
+        const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);
+        createFolder(folder_dir.c_str());
+        chown(folder_dir.c_str(), id, id);
+        chmod(folder_dir.c_str(), 0700);
         
         pid_t pid = fork();
         if (pid == -1) {

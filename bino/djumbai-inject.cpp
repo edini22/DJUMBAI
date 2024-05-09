@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <limits> // Adicione esta linha
+#include <cctype>
+#include <string>
 
 using namespace std;
 
@@ -18,7 +20,7 @@ struct Message{
 
 // Serializar estrutura para bytes
 void serialize(const Message &obj, char *buffer){
-    std::memcpy(buffer, &obj, sizeof(Message));
+    memcpy(buffer, &obj, sizeof(Message));
 }
 
 // Verificar se o UID é válido
@@ -28,11 +30,11 @@ bool validate_uid(const uid_t uid){
 
     if (pw != NULL){
         // UID válido
-        std::cout << "UID " << uid << " matches user: " << pw->pw_name << std::endl;
+        cout << "UID " << uid << " matches user: " << pw->pw_name << endl;
         return true;
     }else{
         // UID inválido
-        std::cout << "UID " << uid << " does not match any valid user." << std::endl;
+        cout << "UID " << uid << " does not match any valid user." << endl;
         return false;
     }
 }
@@ -89,9 +91,18 @@ int main(){
         Message msg;
 
         // Obter o UID do utilizador para quem irá a mensagem
-        int id;
+        string id_str;
         cout << "Receiver UID: ";
-        cin >> id;
+        cin >> id_str;
+
+        for (size_t i = 0; i < id_str.length(); ++i){
+            if(!isdigit(id_str[i])){
+                cerr << "INJECT: Only digits are permited";
+                return 1;
+            }
+        }
+
+        int id = stoi(id_str);
 
         // Validar o UID
         if (!validate_uid(id)){

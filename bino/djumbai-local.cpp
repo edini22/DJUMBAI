@@ -55,19 +55,18 @@ int main(int argc, char *argv[]) {
     }
 
     // Create the folder structure for the user
-    const string folder_dir = "/var/DJUMBAI/users/" + to_string(getuid());
+
     const string cur_dir = "/var/DJUMBAI/users/" + to_string(getuid()) + "/cur";
     const string new_dir = "/var/DJUMBAI/users/" + to_string(getuid()) + "/new";
-    const char *folderPath = folder_dir.c_str();
+
     const char *curPath = cur_dir.c_str();
     const char *newPath = new_dir.c_str();
 
-    cout << "LOCAL: Folder path: " << folderPath << endl;
+    // cout << "LOCAL: Folder path: " << folderPath << endl;
     cout << "LOCAL: Cur path: " << curPath << endl;
     cout << "LOCAL: New path: " << newPath << endl;
 
     // Check if the folder already exists
-    createFolder(folderPath);
     createFolder(curPath);
     createFolder(newPath);
 

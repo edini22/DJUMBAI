@@ -45,6 +45,17 @@ projeto TS3
 - todo/212321313.lnk
 - todo/212321314.lnk
 
+# Group
+
+
+- groups | djumbaig djumbaig 775
+    - name.mdjumbai | djumbaig djumbaig 775
+        - 1000
+        - 1001
+
+
+
+
 # Permissoes
 
 qmailq (queue, clean)
@@ -66,8 +77,6 @@ qmails (send)
 # TODO
 
 * handle SIGINT no djumbai-start para matar os filhos e fechar os pipes
-
-* ERRO de criar uma pasta com o uid de outra pessoa
 
 * resolver TODO'S
 
