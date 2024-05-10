@@ -15,7 +15,7 @@ get_user_uid() {
 # Criar utilizadores
 userq="djumbaiq"
 users="djumbais"
-userg="djumbaiq"
+userg="djumbaig"
 
 useradd "$userq"
 useradd "$users"
@@ -33,29 +33,29 @@ mkdir -p "$BIN_DIR"
 
 cp ./djumbai-inject ./djumbai-queue ./djumbai-send ./djumbai-clean ./djumbai-lspawn ./djumbai-local ./djumbai-check ./djumbai-groups ./djumbai-group-manager "$BIN_DIR"
 
-chmod 701 "$BIN_DIR/djumbai-inject"
+chmod 101 "$BIN_DIR/djumbai-inject"
 
-chown "$userq" "$BIN_DIR/djumbai-queue"
-chmod 701 "$BIN_DIR/djumbai-queue"
-chmod u+s "$BIN_DIR/djumbai-queue"
+chown "$userq":"$userq" "$BIN_DIR/djumbai-queue"
+chmod 6111 "$BIN_DIR/djumbai-queue"
+# chmod u+s "$BIN_DIR/djumbai-queue"
 
 chown "$users" "$BIN_DIR/djumbai-send"
-chmod 700 "$BIN_DIR/djumbai-send"
+chmod 100 "$BIN_DIR/djumbai-send"
 
 chown "$userq" "$BIN_DIR/djumbai-clean"
-chmod 700 "$BIN_DIR/djumbai-clean"
+chmod 100 "$BIN_DIR/djumbai-clean"
 
-chmod 700 "$BIN_DIR/djumbai-lspawn"
+chmod 100 "$BIN_DIR/djumbai-lspawn"
 
-chmod 711 "$BIN_DIR/djumbai-local"
+chmod 111 "$BIN_DIR/djumbai-local"
 
-chmod 711 "$BIN_DIR/djumbai-check"
+chmod 111 "$BIN_DIR/djumbai-check"
 
-chmod 711 "$BIN_DIR/djumbai-groups"
+chmod 111 "$BIN_DIR/djumbai-groups"
 
 chown "$userg" "$BIN_DIR/djumbai-group-manager"
-chmod 701 "$BIN_DIR/djumbai-group-manager"
-chmod u+s "$BIN_DIR/djumbai-group-manager"
+chmod 4101 "$BIN_DIR/djumbai-group-manager"
+# chmod u+s "$BIN_DIR/djumbai-group-manager"
 
 echo "Diretorias bin criadas!"
 
@@ -63,9 +63,10 @@ echo "Diretorias bin criadas!"
 echo "A cria diretoria boot ..."
 
 mkdir -p "$BOOT_DIR"
+chmod 500 "$BOOT_DIR"
 
 cp ../boot/djumbai-start "$BOOT_DIR"
-chmod 700 "$BOOT_DIR/djumbai-start"
+chmod 100 "$BOOT_DIR/djumbai-start"
 
 echo "Diretoria boot criada!"
 
@@ -117,7 +118,7 @@ chmod 2750 "$GROUP_DIR"
 
 mkdir -p "$GROUP_DIR/users"
 chown "$userg" "$GROUP_DIR/users"
-chmod 700 "$GROUP_DIR/users" #meter 2?
+chmod 700 "$GROUP_DIR/users" 
 
 echo "Diretoria groups criadas!"
 

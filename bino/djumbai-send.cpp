@@ -220,7 +220,11 @@ int main() {
                                     string temp = "";
                                     getline(info_file1, temp);
                                     getline(info_file1, line);
-                                    m += "FROM: " + line + " " + temp + "\n";
+                                    if(temp != "<NO.GROUP.>"){
+                                        m += "FROM: " + line + "\tGROUP: " + temp + "\n";
+                                    }else{
+                                        m += "FROM: " + line + "\n";
+                                    }
                                     getline(info_file1, line);
                                     m += "SUBJECT: " + line + "\n";
                                     m += "MESSAGE: ";
