@@ -123,79 +123,79 @@ int main() {
 
     // call the programs with specific uids
 
-    // pid_t pid_send = fork();
-    // pid_t pid_clean;
-    // pid_t pid_lspawn;
-    // if (pid_send == 0) {
-    //     // child process
-    //     // setuid(djumbais);
-    //     // execl("/var/DJUMBAI/bin/djumbai-send", "djumbai-send", NULL);
-    //     // setsid();
-    //     // close(STDIN_FILENO);
-    //     // close(STDOUT_FILENO);
-    //     // close(STDERR_FILENO);
-    //     system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
-    // } else {
-    //     sleep(2);
-    //     pid_clean = fork();
-    //     if (pid_clean == 0) {
-    //         // child process
-    //         // setuid(djumbaiq);
-    //         // execl("/var/DJUMBAI/bin/djumbai-clean", "djumbai-clean", NULL);
-    //         // setsid();
-    //         // close(STDIN_FILENO);
-    //         // close(STDOUT_FILENO);
-    //         // close(STDERR_FILENO);
-    //         system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
+    pid_t pid_send = fork();
+    pid_t pid_clean;
+    pid_t pid_lspawn;
+    if (pid_send == 0) {
+        // child process
+        // setuid(djumbais);
+        // execl("/var/DJUMBAI/bin/djumbai-send", "djumbai-send", NULL);
+        // setsid();
+        // close(STDIN_FILENO);
+        // close(STDOUT_FILENO);
+        // close(STDERR_FILENO);
+        system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
+    } else {
+        sleep(2);
+        pid_clean = fork();
+        if (pid_clean == 0) {
+            // child process
+            // setuid(djumbaiq);
+            // execl("/var/DJUMBAI/bin/djumbai-clean", "djumbai-clean", NULL);
+            // setsid();
+            // close(STDIN_FILENO);
+            // close(STDOUT_FILENO);
+            // close(STDERR_FILENO);
+            system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
 
-    //     } else {
-    //         sleep(2);
-    //         pid_lspawn= fork();
-    //         if (pid_lspawn == 0) {
-    //             // child process
-    //             // execl("/var/DJUMBAI/bin/djumbai-lspawn", "djumbai-lspawn", NULL);
-    //             // setsid();
-    //             // close(STDIN_FILENO);
-    //             // close(STDOUT_FILENO);
-    //             // close(STDERR_FILENO);
-    //             system("/var/DJUMBAI/bin/djumbai-lspawn");
+        } else {
+            sleep(2);
+            pid_lspawn= fork();
+            if (pid_lspawn == 0) {
+                // child process
+                // execl("/var/DJUMBAI/bin/djumbai-lspawn", "djumbai-lspawn", NULL);
+                // setsid();
+                // close(STDIN_FILENO);
+                // close(STDOUT_FILENO);
+                // close(STDERR_FILENO);
+                system("/var/DJUMBAI/bin/djumbai-lspawn");
                 
-    //         }else{
-    //             // parent process
+            }else{
+                // parent process
 
-    //             // int shmid = shmget(IPC_PRIVATE, sizeof(int) * 3, IPC_CREAT | 0600);
-    //             // if (shmid == -1) {
-    //             //     std::cerr << "Failed to create shared memory segment." << std::endl;
-    //             //     exit(1);
-    //             // }
+                // int shmid = shmget(IPC_PRIVATE, sizeof(int) * 3, IPC_CREAT | 0600);
+                // if (shmid == -1) {
+                //     std::cerr << "Failed to create shared memory segment." << std::endl;
+                //     exit(1);
+                // }
 
-    //             // int *shmem = (int *)shmat(shmid, NULL, 0);
-    //             // if (shmem == (int *)-1) {
-    //             //     std::cerr << "Failed to attach to shared memory segment." << std::endl;
-    //             //     exit(1);
-    //             // }
+                // int *shmem = (int *)shmat(shmid, NULL, 0);
+                // if (shmem == (int *)-1) {
+                //     std::cerr << "Failed to attach to shared memory segment." << std::endl;
+                //     exit(1);
+                // }
 
-    //             // shmem[0] = pid_send;
-    //             // shmem[1] = pid_clean;
-    //             // shmem[2] = pid_lspawn;
+                // shmem[0] = pid_send;
+                // shmem[1] = pid_clean;
+                // shmem[2] = pid_lspawn;
 
-    //             // // Detach from the shared memory segment
-    //             // if (shmdt(shmem) == -1) {
-    //             //     std::cerr << "Failed to detach from shared memory segment." << std::endl;
-    //             //     return 1;
-    //             // }
+                // // Detach from the shared memory segment
+                // if (shmdt(shmem) == -1) {
+                //     std::cerr << "Failed to detach from shared memory segment." << std::endl;
+                //     return 1;
+                // }
 
-    //             int status;
-    //             waitpid(pid_send, &status, 0);
-    //             cout << "Processo filho terminou com status: " << status << endl;
-    //             waitpid(pid_clean, &status, 0);
-    //             cout << "Processo filho terminou com status: " << status << endl;
-    //             waitpid(pid_lspawn, &status, 0);
-    //             cout << "Processo filho terminou com status: " << status << endl;
+                int status;
+                waitpid(pid_send, &status, 0);
+                cout << "Processo filho terminou com status: " << status << endl;
+                waitpid(pid_clean, &status, 0);
+                cout << "Processo filho terminou com status: " << status << endl;
+                waitpid(pid_lspawn, &status, 0);
+                cout << "Processo filho terminou com status: " << status << endl;
             
-    //         }
-    //     }
-    // }
+            }
+        }
+    }
 
     
     
