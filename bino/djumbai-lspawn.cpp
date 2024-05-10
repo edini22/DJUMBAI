@@ -89,13 +89,13 @@ int main(){
 
     while (true) {
         cout << "LSPAWN: Esperando por dados no pipe...\n";
-        int fdspawn0 = open(pipe_name_spawn0, O_RDWR);
+        int fdspawn0 = open(pipe_name_spawn0, O_RDONLY);
         if (fdspawn0 == -1) {
             cerr << "LSPAWN: Erro ao abrir o pipe0.\n";
             return 1;
         }
 
-        int fdspawn1 = open(pipe_name_spawn1, O_RDWR);
+        int fdspawn1 = open(pipe_name_spawn1, O_WRONLY | O_TRUNC);
         if (fdspawn1 == -1) {
             cerr << "LSPAWN: Erro ao abrir o pipe1.\n";
             return 1;

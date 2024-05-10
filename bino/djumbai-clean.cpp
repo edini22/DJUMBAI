@@ -17,13 +17,13 @@ int main() {
 
     while (true) {
         cout << "CLEAN: Esperando por dados no pipe...\n";
-        int fd0 = open(pipe_name_clean0, O_RDWR);
+        int fd0 = open(pipe_name_clean0, O_RDONLY);
         if (fd0 == -1) {
             cerr << "CLEAN: Erro ao abrir o pipe clean_0.\n" << strerror(errno);
             return 1;
         }
 
-        int fd1 = open(pipe_name_clean1, O_RDWR);
+        int fd1 = open(pipe_name_clean1, O_WRONLY | O_TRUNC);
         if (fd1 == -1) {
             cerr << "CLEAN: Erro ao abrir o pipe clean_1.\n"  << strerror(errno);
             return 1;

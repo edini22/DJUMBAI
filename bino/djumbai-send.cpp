@@ -101,7 +101,8 @@ int parseUID(const string str, bool insideBrackets) {
 
 bool send(const char * message,const char * pipe0, const char * pipe1, Logger& logger){
     for (int i = 0; i < 3; i++) { // 3 tentativas
-        int fd_clean0 = open(pipe0, O_RDWR);
+    
+        int fd_clean0 = open(pipe0, O_WRONLY | O_TRUNC);
         if (fd_clean0 == -1) {
             logger.log(LogLevel::ERROR, "Error opening pipe " + string(pipe0));
             return 1;
@@ -116,11 +117,30 @@ bool send(const char * message,const char * pipe0, const char * pipe1, Logger& l
             close(fd_clean0);
         }
 
+        fd_set rfds;
+        struct timeval tv;
+        int retval;
+
         // read status code
-        int fd_clean1 = open(pipe1, O_RDWR);
+        int fd_clean1 = open(pipe1, O_RDONLY | O_NONBLOCK);
+
+
+        FD_ZERO(&rfds);
+        FD_SET(fd_clean1, &rfds);
+
+        tv.tv_sec = 20;
+
+        // Esperar até que o descritor de arquivo se torne pronto para leitura ou até que ocorra um timeout
+        retval = select(fd_clean1 + 1, &rfds, NULL, NULL, &tv);
+
+
         if (fd_clean1 == -1) {
             logger.log(LogLevel::ERROR, "Error opening pipe " + string(pipe1));
-            return 1;
+            return false;
+        }
+        if(retval == -1){
+            logger.log(LogLevel::ERROR, "Error selecting pipe " + string(pipe1));
+            return false;
         }
         char buffer[1024];
         ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
