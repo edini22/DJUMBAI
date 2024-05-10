@@ -3,20 +3,67 @@
 #include <fstream>
 #include <iostream>
 #include <libgen.h> // para dirname()
+#include <pwd.h>
 #include <string.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <pwd.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace filesystem;
 
+enum class LogLevel { INFO,
+                      WARNING,
+                      ERROR };
+class Logger {
+public:
+    Logger(const string &filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string &message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm *localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+        case LogLevel::INFO:
+            levelStr = "INFO";
+            break;
+        case LogLevel::WARNING:
+            levelStr = "WARNING";
+            break;
+        case LogLevel::ERROR:
+            levelStr = "ERROR";
+            break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no consola
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    ofstream logFile;
+};
+
 // Estrutura de mensagem
-struct Message
-{
+struct Message {
     char sender[25];
     char group_name[25];
     char group_members[20][25];
@@ -25,59 +72,45 @@ struct Message
 };
 
 // Deserializar bytes para estrutura
-void deserialize(const char *buffer, Message &obj)
-{
+void deserialize(const char *buffer, Message &obj) {
     memcpy(&obj, buffer, sizeof(Message));
 }
 
-// Verificar se o UID é válido
-bool validate_uid(const uid_t uid)
-{
+bool validate_uid(const uid_t uid, Logger &logger) {
     // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
-    if (pw != NULL)
-    {
+    if (pw != NULL) {
         // UID válido
-        cout << "UID " << uid << " matches user: " << pw->pw_name << endl;
+        logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
         return true;
-    }
-    else
-    {
+    } else {
         // UID inválido
-        cout << "UID " << uid << " does not match any valid user." << endl;
+        logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
         return false;
     }
 }
 
-bool add_remove_group(const string &path, const string &group, bool flag)
-{
-    if (flag)
-    { // flag se estiver a true e para adicionar ao ficheiro aquele grupo
+bool add_remove_group(const string &path, const string &group, bool flag) {
+    if (flag) { // flag se estiver a true e para adicionar ao ficheiro aquele grupo
         // se ja existe vai adicionar ao ficheiro o grupo no final
         bool found = false;
-        if (exists(path))
-        {
+        if (exists(path)) {
             found = true;
         }
         ofstream file(path, ios::app);
-        if (!found)
-        {
+        if (!found) {
             chmod(path.c_str(), 0700);
         }
-        if (!file.is_open())
-        {
+        if (!file.is_open()) {
             cerr << "Failed to open file for writing.\n";
             return false;
         }
         file << group << "\n";
         file.close();
-    }
-    else
-    { // vai retirar o grupo do ficheiro
+    } else { // vai retirar o grupo do ficheiro
         ifstream file(path);
-        if (!file.is_open())
-        {
+        if (!file.is_open()) {
             cerr << "Failed to open file for reading.\n";
             return false;
         }
@@ -85,13 +118,13 @@ bool add_remove_group(const string &path, const string &group, bool flag)
         string add;
         int c = 0;
         while (getline(file, line)) {
-            if(line != "")
+            if (line != "")
                 c += 1;
             if (line != group) {
                 add += line + "\n";
             }
         }
-        if (c == 1) { 
+        if (c == 1) {
             remove(path.c_str());
         } else {
             ofstream temp(path);
@@ -102,9 +135,8 @@ bool add_remove_group(const string &path, const string &group, bool flag)
     return true;
 }
 
-int main()
-{
-
+int main() {
+    Logger logger("/var/log/djumbai-group-manager.log");
     Message msg;
     char buffer[sizeof(Message)];
 
@@ -115,23 +147,21 @@ int main()
     deserialize(buffer, msg);
 
     string flag = msg.flag;
-    if (flag != "-c" && flag != "-ru" && flag != "-rg" && flag != "-l" && flag != "-lg" && flag != "-a")
-    {
-        cout << "Argumento invalido" << endl;
+    if (flag != "-c" && flag != "-ru" && flag != "-rg" && flag != "-l" && flag != "-lg" && flag != "-a") {
+        logger.log(LogLevel::ERROR, "Invalid flag");
         return 1;
     }
 
-    for (size_t d = 0; d < strlen(msg.sender); ++d)
-    {
-        if (!isdigit(msg.sender[d]))
-        {
-            cerr << "DJUMBAI GM: Only digits are permited";
+    for (size_t d = 0; d < strlen(msg.sender); ++d) {
+        if (!isdigit(msg.sender[d])) {
+            logger.log(LogLevel::ERROR, "Only digits are permited");
             return 1;
         }
     }
-    if (!validate_uid(stoi(msg.sender)))
-    {
-        cerr << "DJUMBAI GM: Invalid UID";
+    try {
+        validate_uid(stoi(msg.sender), logger);
+    } catch (const std::exception &e) {
+        logger.log(LogLevel::ERROR, "Failed to open file for reading");
         return 1;
     }
 
@@ -139,150 +169,144 @@ int main()
 
     string all_message = "";
 
-    if (flag == "-c")
-    {
+    if (flag == "-c") {
         // Verificar se o ficheiro existe
-        if (exists(path))
-        {
-            cerr << "Um grupo com esse nome já existe.\n";
+        if (exists(path)) {
+            logger.log(LogLevel::ERROR, "Group already exists");
             return 1;
         }
 
-        ofstream file(path); // #TODO: mudar permissoes
-        if (!file.is_open())
-        {
-            cerr << "Failed to open file for writing.\n";
+        ofstream file(path);
+        if (!file.is_open()) {
+            logger.log(LogLevel::ERROR, "Failed to open file for writing");
             return 1;
         }
-        // cout << "msg.sender: " << msg.sender << endl;
+
         all_message = string(msg.sender) + "\n";
-        // cout << "msg.num: " << msg.num << endl;
 
         all_message += to_string(msg.num + 1) + "\n";
-        for (int i = 0; i < msg.num; i++)
-        {
+        for (int i = 0; i < msg.num; i++) {
 
-            for (size_t d = 0; d < strlen(msg.group_members[i]); ++d)
-            {
-                if (!isdigit(msg.group_members[i][d]))
-                {
-                    cerr << "DJUMBAI GM: Only digits are permited";
+            for (size_t d = 0; d < strlen(msg.group_members[i]); ++d) {
+                if (!isdigit(msg.group_members[i][d])) {
+                    logger.log(LogLevel::ERROR, "Only digits are permited");
                     return 1;
                 }
             }
-            int id = stoi(msg.group_members[i]);
 
-            // Validar o UID
-            if (!validate_uid(id))
-            {
-                cerr << "DJUMBAI GM: Invalid UID";
+            int id;
+            try {
+                id = stoi(msg.group_members[i]); 
+                validate_uid(id, logger);
+            } catch (const std::exception &e) {
+                logger.log(LogLevel::ERROR, "Invalid UID");
                 return 1;
             }
 
-            // Adicionar a lista de membros
-            // cout << "fim for" << endl;
             all_message += to_string(id) + "\n";
         }
-        // cout << "all_message: " << all_message << endl;
+
         file << all_message;
         file.close();
-        chown(path.c_str(), getuid(), 1003); // TODO: ir buscar ao file
+
+        // Open uids file
+        ifstream uids("/var/DJUMBAI/bin/uids.txt");
+        if (!uids.is_open()) {
+            logger.log(LogLevel::ERROR, "Failed to open file for reading");
+            return 1;
+        }
+        string userq;
+        getline(uids, userq);
+        uid_t uid;
+        try {
+            uid = stoi(userq);
+        } catch (const std::exception &e) {
+            logger.log(LogLevel::ERROR, "Invalid UID");
+            return 1;
+        }
+        chown(path.c_str(), getuid(), uid); // TODO: ir buscar ao file
         chmod(path.c_str(), 0750);
+
+        uids.close();
 
         const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.sender) + ".mdjumbai";
         add_remove_group(path1, msg.group_name, true);
 
-        for (int i = 0; i < msg.num; i++)
-        {
+        for (int i = 0; i < msg.num; i++) {
             const string path2 = "/var/DJUMBAI/groups/users/" + string(msg.group_members[i]) + ".mdjumbai";
             add_remove_group(path2, msg.group_name, true);
         }
-        cout << "Grupo criado com sucesso";
-    }
-    else if (flag == "-ru")
-    {
+        logger.log(LogLevel::INFO, "Group created successfully");
+    } else if (flag == "-ru") {
         // Verificar se o ficheiro existe
-        if (!exists(path))
-        {
-            cerr << "Esse grupo com esse nome não existe.\n";
+        if (!exists(path)) {
+            logger.log(LogLevel::ERROR, "Group does not exist");
             return 1;
         }
-        for (size_t d = 0; d < strlen(msg.group_members[0]); ++d)
-        {
-            if (!isdigit(msg.group_members[0][d]))
-            {
-                cerr << "DJUMBAI GM: Only digits are permited";
+        for (size_t d = 0; d < strlen(msg.group_members[0]); ++d) {
+            if (!isdigit(msg.group_members[0][d])) {
+                logger.log(LogLevel::ERROR, "Only digits are permited");
                 return 1;
             }
         }
-        int id = stoi(msg.group_members[0]);
 
-        // Validar o UID
-        if (!validate_uid(id))
-        {
-            // TODO: print erro bombado
+        try {
+            validate_uid(stoi(msg.group_members[0]), logger);
+        } catch (const std::exception &e) {
+            logger.log(LogLevel::ERROR, "Invalid UID");
             return 1;
         }
 
         // Remover da lista de membros
         string line;
         ifstream local_file(path);
-        if (local_file.is_open())
-        {
+        if (local_file.is_open()) {
             // Verificar se o utilizador é o dono do grupo
             getline(local_file, line);
-            int id = stoi(line);
-            // Validar o UID
-            if (!validate_uid(id))
-            {
-                // TODO: print erro bombado
+            int id;
+            try {
+                id = stoi(line);
+                validate_uid(id, logger);
+            } catch (const std::exception &e) {
+                logger.log(LogLevel::ERROR, "Invalid UID");
                 return 1;
             }
             int sender = stoi(msg.sender);
 
-            if (id != sender)
-            {
-                cerr << "Não tem permissões para remover membros do grupo";
+            if (id != sender) {
+                logger.log(LogLevel::ERROR, "You don't have permissions to remove members from the group");
                 return 1;
             }
 
             all_message += line + "\n";
-            // Verificar se tem mais que 3 membros
             getline(local_file, line);
             int num = stoi(line);
-            if (num < 3)
-            {
-                cerr << "Não pode remover membros de um grupo com menos de 3 membros";
+            if (num < 3) {
+                logger.log(LogLevel::ERROR, "Group must have at least 3 members");
                 return 1;
             }
             all_message += to_string(num - 1) + "\n";
 
             // verificar se o membro a remover existe
             bool found = false;
-            for (int i = 0; i < num - 1 ; i++)
-            {
+            for (int i = 0; i < num - 1; i++) {
                 getline(local_file, line);
                 string temp = msg.group_members[0];
-                if (line != temp)
-                {
+                if (line != temp) {
                     all_message += line + "\n";
-                }
-                else
-                {
+                } else {
                     found = true;
                 }
             }
-            if (!found)
-            {
-                cerr << "O membro a remover não existe";
+            if (!found) {
+                logger.log(LogLevel::ERROR, "Member does not exist");
                 return 1;
             }
 
             local_file.close();
             ofstream file(path);
-            if (!file.is_open())
-            {
-                cerr << "Failed to open file for writing.\n";
+            if (!file.is_open()) {
+                logger.log(LogLevel::ERROR, "Failed to open file for writing");
                 return 1;
             }
             file << all_message;
@@ -290,47 +314,41 @@ int main()
 
             const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.group_members[0]) + ".mdjumbai";
             add_remove_group(path1, msg.group_name, false);
-        }
-        else
-        {
-            cerr << "Erro ao abrir o ficheiro";
+        } else {
+            logger.log(LogLevel::ERROR, "Failed to open file for reading");
             return 1;
         }
-    }
-    else if (flag == "-rg")
-    {
+    } else if (flag == "-rg") {
         // Verificar se o ficheiro existe
-        if (!exists(path))
-        {
-            cerr << "Esse grupo com esse nome não existe.\n";
+        if (!exists(path)) {
+            logger.log(LogLevel::ERROR, "Group does not exist");
             return 1;
         }
 
         string line;
         ifstream local_file(path);
-        if (local_file.is_open())
-        {
+        if (local_file.is_open()) {
             // Verificar se o utilizador é o dono do grupo
             getline(local_file, line);
-            int id = stoi(line);
-            // Validar o UID
-            if (!validate_uid(id))
-            {
-                // TODO: print erro bombado
+
+            int id, sender;
+            try {
+                id = stoi(line);
+                validate_uid(id, logger);
+                sender = stoi(msg.sender);
+            } catch (const std::exception &e) {
+                logger.log(LogLevel::ERROR, "Invalid UID");
                 return 1;
             }
-            int sender = stoi(msg.sender);
 
-            if (id != sender)
-            {
-                cerr << "Não tem permissões para remover membros do grupo";
+            if (id != sender) {
+                logger.log(LogLevel::ERROR, "You don't have permissions to remove this group");
                 return 1;
             }
 
             getline(local_file, line);
 
-            while (getline(local_file, line))
-            {
+            while (getline(local_file, line)) {
                 const string path1 = "/var/DJUMBAI/groups/users/" + line + ".mdjumbai";
                 add_remove_group(path1, msg.group_name, false);
             }
@@ -338,21 +356,16 @@ int main()
             add_remove_group(path2, msg.group_name, false);
 
             remove(path.c_str());
-            cout << "Grupo removido com sucesso";
+            logger.log(LogLevel::INFO, "Group removed successfully");
             return 0;
-        }
-        else
-        {
-            cerr << "Erro ao abrir o ficheiro";
+        } else {
+            logger.log(LogLevel::ERROR, "Failed to open file for reading");
             return 1;
         }
-    }
-    else if (flag == "-l")
-    {
+    } else if (flag == "-l") {
         // Verificar se o ficheiro existe
-        if (!exists(path))
-        {
-            cerr << "Esse grupo com esse nome não existe.\n";
+        if (!exists(path)) {
+            logger.log(LogLevel::ERROR, "Group does not exist");
             return 1;
         }
 
@@ -360,135 +373,121 @@ int main()
         string line;
         ifstream local_file(path);
         bool found = false;
-        if (local_file.is_open())
-        {
+        if (local_file.is_open()) {
             getline(local_file, line);
-            if (line == msg.sender)
-            {
+            if (line == msg.sender) {
                 found = true;
             }
             all_message += line + "\n";
             getline(local_file, line);
-
-            int num = stoi(line);
-            cout << num << endl;
+            int num;
+            try {
+                num = stoi(line);
+            } catch (const exception &e) {
+                logger.log(LogLevel::ERROR, "Failed to convert string to integer");
+                return 1;
+            }
 
             for (int i = 0; i < num; i++) {
                 getline(local_file, line);
-                if (line == msg.sender)
-                {
+                if (line == msg.sender) {
                     found = true;
                 }
                 all_message += line + "\n";
             }
             if (!found) {
-                cerr << "Não pertence a esse grupo.\n";
+                logger.log(LogLevel::ERROR, "You don't belong to this group");
                 return 1;
             }
             cout << all_message;
             return 0;
         }
-    }
-    else if (flag == "-lg")
-    {
+    } else if (flag == "-lg") {
         // Verificar se o ficheiro existe
         const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.sender) + ".mdjumbai";
-        if (!exists(path1))
-        {
-            cerr << "Pertence a 0 grupos atualmente.\n";
+        if (!exists(path1)) {
+            logger.log(LogLevel::ERROR, "You don't belong to any group");
             return 1;
         }
         string output = "";
         string line;
         ifstream local_file(path1);
         if (local_file.is_open()) {
-            output += "Grupos a que pertence:\n";
-            while (getline(local_file, line))
-            {   
+            output += "Groups I belong to:\n";
+            while (getline(local_file, line)) {
                 output += line + "\n";
             }
             cout << output << endl;
             return 0;
         } else {
-            cerr << "Erro ao abrir o ficheiro";
+            logger.log(LogLevel::ERROR, "Failed to open file for reading");
             return 1;
         }
-    }
-    else if (flag == "-a") {
+    } else if (flag == "-a") {
         // Verificar se o ficheiro existe
-        if (!exists(path))
-        {
-            cerr << "Não existe nenhum grupo com esse nome.\n";
+        if (!exists(path)) {
+            logger.log(LogLevel::ERROR, "Group does not exist");
             return 1;
         }
 
-        for (size_t d = 0; d < strlen(msg.group_members[0]); ++d)
-        {
-            if (!isdigit(msg.group_members[0][d]))
-            {
-                cerr << "DJUMBAI GM: Only digits are permited";
+        for (size_t d = 0; d < strlen(msg.group_members[0]); ++d) {
+            if (!isdigit(msg.group_members[0][d])) {
+                logger.log(LogLevel::ERROR, "Only digits are permited");
                 return 1;
             }
         }
-
-        int id_new = stoi(msg.group_members[0]);
-        // Validar o UID
-        if (!validate_uid(id_new))
-        {
-            // TODO: print erro bombado
+        int id_new;
+        try {
+            id_new = stoi(msg.group_members[0]);
+            validate_uid(id_new, logger);
+        } catch (const exception &e) {
+            logger.log(LogLevel::ERROR, "Invalid UID");
             return 1;
         }
 
         string line;
         ifstream local_file(path);
-        if (local_file.is_open())
-        {
+        if (local_file.is_open()) {
             // Verificar se o utilizador é o dono do grupo
             getline(local_file, line);
-            int id = stoi(line);
-            // Validar o UID
-            if (!validate_uid(id))
-            {
-                // TODO: print erro bombado
-                return 1;
-            }
-            int sender = stoi(msg.sender);
+            int id, sender;
 
-            if (id != sender)
-            {
-                cerr << "Não tem permissões para adicionar membros o grupo";
+            try {
+                id = stoi(line);
+                validate_uid(id, logger);
+                sender = stoi(msg.sender);
+            } catch (const std::exception &e) {
+                logger.log(LogLevel::ERROR, "Invalid UID");
+            }
+
+            if (id != sender) {
+                logger.log(LogLevel::ERROR, "You don't have permissions to add members to the group");
                 return 1;
             }
 
             all_message += line + "\n";
             getline(local_file, line);
             int num = stoi(line);
-            if (num >= 20)
-            {
-                cerr << "Grupo cheio, não pode adicionar mais membros";
+            if (num >= 20) {
+                logger.log(LogLevel::ERROR, "Group is full, cannot add more members");
                 return 1;
             }
             all_message += to_string(num + 1) + "\n";
 
             // verificar se o membro a adicionar já existe
             bool found = false;
-            for (int i = 0; i < num - 1; i++)
-            {
+            for (int i = 0; i < num - 1; i++) {
                 getline(local_file, line);
 
                 string temp = msg.group_members[0];
-                if (line != temp)
-                {
+                if (line != temp) {
                     all_message += line + "\n";
-                }
-                else
-                {
+                } else {
                     found = true;
                 }
             }
-            if (found)
-            {
-                cerr << "O membro a adicionar já existe\n";
+            if (found) {
+                logger.log(LogLevel::ERROR, "Member already exists");
                 return 1;
             }
 
@@ -497,21 +496,18 @@ int main()
 
             local_file.close();
             ofstream file(path);
-            if (!file.is_open())
-            {
-                cerr << "Failed to open file for writing.\n";
+            if (!file.is_open()) {
+                logger.log(LogLevel::ERROR, "Failed to open file for writing");
                 return 1;
             }
             file << all_message;
             file.close();
-            cout << "Membro adicionado com sucesso" << endl;
+            logger.log(LogLevel::INFO, "Member added successfully");
 
             const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.group_members[0]) + ".mdjumbai";
             add_remove_group(path1, msg.group_name, true);
-        }
-        else
-        {
-            cerr << "Erro ao abrir o ficheiro";
+        } else {
+            logger.log(LogLevel::ERROR, "Failed to open file for reading");
             return 1;
         }
     }

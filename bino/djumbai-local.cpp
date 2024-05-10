@@ -1,44 +1,46 @@
 #include <cstdio>
+#include <fcntl.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <libgen.h> // para dirname()
+#include <pwd.h>
+#include <string.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <libgen.h> // para dirname()
-#include <string.h>
-#include <pwd.h>
-#include <fcntl.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 using namespace std;
 
-enum class LogLevel { INFO, WARNING, ERROR };
+enum class LogLevel { INFO,
+                      WARNING,
+                      ERROR };
 
 class Logger {
 public:
-    Logger(const string& filename) : logFile(filename, ios::app) {}
+    Logger(const string &filename) : logFile(filename, ios::app) {}
 
-    void log(LogLevel level, const string& message) {
+    void log(LogLevel level, const string &message) {
         // Obtém a data e hora atual
         time_t now = time(nullptr);
-        tm* localTime = localtime(&now);
+        tm *localTime = localtime(&now);
         char timestamp[20];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
 
         // Define o nível do log
         string levelStr;
         switch (level) {
-            case LogLevel::INFO:
-                levelStr = "INFO";
-                break;
-            case LogLevel::WARNING:
-                levelStr = "WARNING";
-                break;
-            case LogLevel::ERROR:
-                levelStr = "ERROR";
-                break;
+        case LogLevel::INFO:
+            levelStr = "INFO";
+            break;
+        case LogLevel::WARNING:
+            levelStr = "WARNING";
+            break;
+        case LogLevel::ERROR:
+            levelStr = "ERROR";
+            break;
         }
 
         // Formata a mensagem de log
@@ -61,20 +63,19 @@ private:
     ofstream logFile;
 };
 
-
 bool folderExists(const char *folderPath) {
     struct stat info;
     return stat(folderPath, &info) == 0 && S_ISDIR(info.st_mode);
 }
 
-int createFolder(const char * path, Logger& logger) {
+int createFolder(const char *path, Logger &logger) {
 
-    if (folderExists(path)){
+    if (folderExists(path)) {
         logger.log(LogLevel::INFO, "Folder already exists");
-    }else{
-        if (mkdir(path, 0700) == 0){
+    } else {
+        if (mkdir(path, 0700) == 0) {
             logger.log(LogLevel::INFO, "Folder created successfully");
-        }else{
+        } else {
             logger.log(LogLevel::ERROR, "Error creating folder");
             return 1;
         }
@@ -84,13 +85,13 @@ int createFolder(const char * path, Logger& logger) {
 
 int main(int argc, char *argv[]) {
     Logger logger("/var/DJUMBAI/djumbai-local.log");
-    
-    // recebe email por parametro 
+
+    // recebe email por parametro
     if (argc != 2) {
         logger.log(LogLevel::ERROR, "Usage: djumbai-local <email>");
         return 1;
     }
-    
+
     char *email = argv[1];
 
     char cwd[1024];
@@ -111,13 +112,13 @@ int main(int argc, char *argv[]) {
     if (createFolder(curPath, logger) || createFolder(newPath, logger)) {
         return 1;
     }
-    
-    //get current time
+
+    // get current time
     time_t now = time(0);
     // get pid
     pid_t pid = getpid();
 
-    // create file 
+    // create file
     string file_path = "/var/DJUMBAI/users/" + to_string(getuid()) + "/new/" + to_string(now) + "." + to_string(pid) + ".mdjumbai";
 
     ofstream file(file_path);

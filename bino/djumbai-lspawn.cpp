@@ -1,43 +1,45 @@
-#include <iostream>
-#include <libgen.h> 
-#include <filesystem>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <sys/wait.h> 
 #include <cstring>
+#include <fcntl.h>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <libgen.h>
+#include <pwd.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace filesystem;
 
-enum class LogLevel { INFO, WARNING, ERROR };
+enum class LogLevel { INFO,
+                      WARNING,
+                      ERROR };
 
 class Logger {
 public:
-    Logger(const string& filename) : logFile(filename, ios::app) {}
+    Logger(const string &filename) : logFile(filename, ios::app) {}
 
-    void log(LogLevel level, const string& message) {
+    void log(LogLevel level, const string &message) {
         // Obtém a data e hora atual
         time_t now = time(nullptr);
-        tm* localTime = localtime(&now);
+        tm *localTime = localtime(&now);
         char timestamp[20];
         strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
 
         // Define o nível do log
         string levelStr;
         switch (level) {
-            case LogLevel::INFO:
-                levelStr = "INFO";
-                break;
-            case LogLevel::WARNING:
-                levelStr = "WARNING";
-                break;
-            case LogLevel::ERROR:
-                levelStr = "ERROR";
-                break;
+        case LogLevel::INFO:
+            levelStr = "INFO";
+            break;
+        case LogLevel::WARNING:
+            levelStr = "WARNING";
+            break;
+        case LogLevel::ERROR:
+            levelStr = "ERROR";
+            break;
         }
 
         // Formata a mensagem de log
@@ -65,14 +67,14 @@ bool folderExists(const char *folderPath) {
     return stat(folderPath, &info) == 0 && S_ISDIR(info.st_mode);
 }
 
-int createFolder(const char * path, Logger& logger) {
+int createFolder(const char *path, Logger &logger) {
 
-    if (folderExists(path)){
+    if (folderExists(path)) {
         logger.log(LogLevel::INFO, "Folder already exists!");
-    }else{
-        if (mkdir(path, 0700) == 0){
+    } else {
+        if (mkdir(path, 0700) == 0) {
             logger.log(LogLevel::INFO, "Folder created successfully!");
-        }else{
+        } else {
             logger.log(LogLevel::ERROR, "Error creating folder!");
             return 1;
         }
@@ -80,22 +82,22 @@ int createFolder(const char * path, Logger& logger) {
     return 0;
 }
 
-bool validate_uid(const uid_t uid,Logger& logger){
+bool validate_uid(const uid_t uid, Logger &logger) {
     // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
-    if (pw != NULL){
+    if (pw != NULL) {
         // UID válido
         logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
         return true;
-    }else{
+    } else {
         // UID inválido
         logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
         return false;
     }
 }
 
-int parseUID(const string &input, Logger& logger) {
+int parseUID(const string &input, Logger &logger) {
 
     size_t pos = input.find('\n');
 
@@ -104,7 +106,7 @@ int parseUID(const string &input, Logger& logger) {
     }
 
     string str = input.substr(0, pos);
-    
+
     bool insideBrackets = false;
     string numberStr;
 
@@ -125,20 +127,18 @@ int parseUID(const string &input, Logger& logger) {
     int number = -1;
     try {
         number = stoi(numberStr);
-    } catch(const std::exception& e) {
+    } catch (const std::exception &e) {
         logger.log(LogLevel::ERROR, "Error parsing UID");
     }
-    
 
     return number;
 }
 
-int main(){
+int main() {
     Logger logger("/var/log/djumbai-lspawn.log");
-    
+
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
-    
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
@@ -161,12 +161,12 @@ int main(){
             logger.log(LogLevel::ERROR, "Error opening pipe1");
             usleep(1000);
             count0++;
-            if(count0 == 10){
+            if (count0 == 10) {
                 logger.log(LogLevel::ERROR, "Error opening pipe1");
                 return 1;
             }
             continue;
-        }else{
+        } else {
             count0 = 0;
         }
 
@@ -179,12 +179,12 @@ int main(){
             close(fdspawn0);
             usleep(1000);
             count1++;
-            if(count1 == 10){
+            if (count1 == 10) {
                 logger.log(LogLevel::ERROR, "Error reading from pipe");
                 return 1;
             }
             continue;
-        }else{
+        } else {
             count1 = 0;
         }
 
@@ -194,11 +194,11 @@ int main(){
         bool err = false;
 
         string buf = buffer;
-        const char * email = buf.c_str();
+        const char *email = buf.c_str();
 
         string str(buffer);
         int n = parseUID(str, logger);
-        if(n == -1){
+        if (n == -1) {
             logger.log(LogLevel::ERROR, "Error parsing UID");
             continue;
         }
@@ -208,11 +208,11 @@ int main(){
             continue;
         }
 
-        const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);  
+        const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);
         createFolder(folder_dir.c_str(), logger);
         chown(folder_dir.c_str(), id, id);
         chmod(folder_dir.c_str(), 0700);
-        
+
         pid_t pid = fork();
         if (pid == -1) {
             logger.log(LogLevel::ERROR, "Failed to fork");
@@ -221,14 +221,13 @@ int main(){
 
         if (pid == 0) {
             setuid(id);
-        
+
             logger.log(LogLevel::INFO, "Executing djumbai-local program with uid: " + to_string(getpid()));
-            
+
             execl("/var/DJUMBAI/bin/djumbai-local", "djumbai-local", email, NULL);
 
             return 0;
-        }
-        else {
+        } else {
 
             //==============================================
 
@@ -241,9 +240,8 @@ int main(){
 
             string message_err = "Erro ao remover ficheiro!";
             string message_ok = "Ficheiro removido com sucesso!";
-            if (err)
-            {
-                const char* message_p = message_err.c_str();
+            if (err) {
+                const char *message_p = message_err.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
                     logger.log(LogLevel::ERROR, "Error writing to pipe");
@@ -251,7 +249,7 @@ int main(){
                     return 1;
                 }
             } else {
-                const char* message_p = message_ok.c_str();
+                const char *message_p = message_ok.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
                     logger.log(LogLevel::ERROR, "Error writing to pipe");
@@ -262,10 +260,7 @@ int main(){
 
             close(fdspawn1);
         }
-        
-
     }
 
     return 0;
 }
-
