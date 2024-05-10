@@ -145,59 +145,128 @@ bool send(const char * message,const char * pipe0, const char * pipe1, Logger& l
 }
 
 
-// void PIKA(){}
+pair<bool,string> send_message(ifstream& local_file1, const char *pipe_name_spawn0, const char *pipe_name_spawn1, Logger& logger, string filename_without_extension, string info_path, ifstream& file, string line){
+    while (getline(local_file1, line)) {
+        string receiver_uid = line;
+        getline(local_file1, line);
+        string status = line;
 
-// int startup(string folderPath, Logger& logger, const char *pipe_name_clean0, const char *pipe_name_clean1, const char *pipe_name_spawn0, const char *pipe_name_spawn1) {
-//     for (const auto& entry : directory_iterator(folderPath)) {
-//         if (is_regular_file(entry)) {
-//             ifstream file(entry.path());
-//             if (file.is_open()) {
-//                 string filename_without_extension = entry.path().filename().stem().string();
-//                 string line;
-//                 bool flag = false;
-//                 string sender, receiver, subject, group;
-//                 //func
-//                 PIKA(sender, receiver, subject, group);
+        if (status == "DONE") {
+            local_file1.close();
+            file.close();
+            continue;
+        } else {
+            
+            string mess_path = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai"; 
+            ifstream mess_file(mess_path);
+            ifstream info_file1(info_path);
+            string m;
 
-//                 // delete files if they exist
-//                 string info_path = "/var/DJUMBAI/queue/info/" + filename_without_extension + ".mdjumbai";
-//                 string local_path = "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
-                
+            if (mess_file.is_open() && info_file1.is_open()) {
+                m += "TO: " + receiver_uid + "\n";
+                string temp = "";
+                getline(info_file1, temp);
+                getline(info_file1, line);
+                if(temp != "<NO.GROUP.>"){
+                    m += "FROM: " + line + "\tGROUP: " + temp + "\n";
+                }else{
+                    m += "FROM: " + line + "\n";
+                }
+                getline(info_file1, line);
+                m += "SUBJECT: " + line + "\n";
+                m += "MESSAGE: ";
+                while (getline(mess_file, line)) {
+                    m += line + "\n";
+                }
+                mess_file.close();
+                info_file1.close();
+            } else {
+                logger.log(LogLevel::ERROR, "Error opening files: " + mess_path + " and " + info_path);
+            }
+            
+            const char * message_s = m.c_str();
+            if(!send(message_s,pipe_name_spawn0, pipe_name_spawn1, logger)){
+                logger.log(LogLevel::ERROR, "Error sending message to user: " + receiver_uid);
+                return make_pair(false,receiver_uid);
+            } else {
+                logger.log(LogLevel::INFO, "Message sent to user: " + receiver_uid);
+                return make_pair(true,receiver_uid);    
+            }
 
-//                 if (exists(info_path)) {
-//                     remove(info_path);
-//                 }
-//                 if (exists(local_path)) {
-//                     remove(local_path);
-//                 }
+        }
+    }
+    return make_pair(true,"");
+}
 
-//                 // create new info and local files
-//                 ofstream info_file(info_path);
-//                 ofstream local_file(local_path);
-//                 if (info_file.is_open() && local_file.is_open()) {
-//                     if(flag)
-//                         info_file << group << "\n";
-//                     else
-//                         info_file << "<NO.GROUP.>\n";
-//                     info_file << sender << "\n";
-//                     info_file << subject << "\n";
-//                     info_file.close();
+int startup(Logger& logger, const char *pipe_name_spawn0, const char *pipe_name_spawn1, const char *pipe_name_clean0, const char *pipe_name_clean1) {
+    const char * folderPath = "/var/DJUMBAI/queue/local";
+    for (const auto& entry : directory_iterator(folderPath)) {
+        if (is_regular_file(entry)) {
+            ifstream file(entry.path());
+            if (file.is_open()) {
+                string filename_without_extension = entry.path().filename().stem().string();
+                string message_1 = "/var/DJUMBAI/queue/todo/" + filename_without_extension + ".lnk";
+                string message_2 = "/var/DJUMBAI/queue/intd/" + filename_without_extension + ".mdjumbai";
+                const char * message_11 = message_1.c_str();
+                const char * message_22 = message_2.c_str();
+                if(exists(message_11)){
+                    if(!send(message_11, pipe_name_clean0, pipe_name_clean1, logger)) {
+                        logger.log(LogLevel::ERROR, "Error sending message to clean");
+                        file.close();
+                        continue;
+                    }else {
+                        logger.log(LogLevel::INFO, "Message sent to clean");
+                    }
+                }
+                if(exists(message_22)){
+                    if(!send(message_22, pipe_name_clean0, pipe_name_clean1, logger)) {
+                        logger.log(LogLevel::ERROR, "Error sending message to clean");
+                        file.close();
+                        continue;
+                    }else {
+                        logger.log(LogLevel::INFO, "Message sent to clean");
+                    }
+                }
                     
-//                     local_file << '[' << receiver << "]\n" << "NOT DONE" << "\n";
-//                     local_file.close();
+                // ------------ LSPAWN ------------
+                const string info_path = "/var/DJUMBAI/queue/info/" + filename_without_extension + ".mdjumbai";
+                string line;
+                pair<bool,string> status;
+                status = send_message(file, pipe_name_spawn0, pipe_name_spawn1, logger, filename_without_extension, info_path, file, line);
+                bool spawn_status = status.first;
+     
+                if(!spawn_status){                    
+                    file.close();
+                    continue;
+                }else {                        
+                    // Change the status of the message to DONE
+                    string sedCommand = "sed -i \"/^\\[" + status.second + "\\]/{N;s/NOT DONE/DONE/g;}\" " + "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
+                    int status = system(sedCommand.c_str());
+                    if (status == -1) {
+                        logger.log(LogLevel::ERROR, "Error executing sed command");
+                    }
 
-//                 } else {
-//                     logger.log(LogLevel::ERROR, "Error creating files: " + info_path + " and " + local_path);
-//                 }
-                
-//                 //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
-//                 XERECA();
-//             } else {
-//                 logger.log(LogLevel::ERROR, "Error opening file: " + string(entry.path()));
-//             }
-//         }
-//     }
-// }
+                    // Remove the file from the mess folder
+                    remove(info_path);
+                    remove(folderPath);
+                    string message = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai";
+                    const char *message_k = message.c_str();
+                    
+                    if(send(message_k, pipe_name_clean0, pipe_name_clean1, logger)){
+                        logger.log(LogLevel::INFO, "Message sent to clean");
+                    }else{
+                        logger.log(LogLevel::ERROR, "Error sending message to clean");
+                        file.close();
+                        continue;
+                    }
+                }
+            } else {
+                logger.log(LogLevel::ERROR, "Error opening file: " + string(entry.path()));
+            }
+        }
+    }
+    return 0;
+}
 
 int main() {
 
@@ -223,7 +292,7 @@ int main() {
         return 1;
     }
 
-    //TODO: PIPOKINHA
+    startup(logger, pipe_name_spawn0, pipe_name_spawn1, pipe_name_clean0, pipe_name_clean1);
 
     while (true){
         for (const auto& entry : directory_iterator(folderPath)) {
@@ -309,6 +378,8 @@ int main() {
 
                     } else {
                         logger.log(LogLevel::ERROR, "Error creating files: " + info_path + " and " + local_path);
+                        file.close();
+                        continue;
                     }
                     
                     //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
@@ -322,62 +393,21 @@ int main() {
                     }else {
                         logger.log(LogLevel::INFO, "Message sent to clean");
                     }
+                    
                     // ------------ LSPAWN ------------
                     bool spawn_status;
                     ifstream local_file1(local_path);
                     if (local_file1.is_open()) {
-                        while (getline(local_file1, line)) {
-                            string receiver_uid = line;
-                            getline(local_file1, line);
-                            string status = line;
-
-                            if (status == "DONE") {
-                                local_file1.close();
-                                file.close();
-                                continue;
-                            } else {
-                                
-                                string mess_path = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai"; 
-                                ifstream mess_file(mess_path);
-                                ifstream info_file1(info_path);
-                                string m;
-
-                                if (mess_file.is_open() && info_file1.is_open()) {
-                                    m += "TO: " + receiver_uid + "\n";
-                                    string temp = "";
-                                    getline(info_file1, temp);
-                                    getline(info_file1, line);
-                                    if(temp != "<NO.GROUP.>"){
-                                        m += "FROM: " + line + "\tGROUP: " + temp + "\n";
-                                    }else{
-                                        m += "FROM: " + line + "\n";
-                                    }
-                                    getline(info_file1, line);
-                                    m += "SUBJECT: " + line + "\n";
-                                    m += "MESSAGE: ";
-                                    while (getline(mess_file, line)) {
-                                        m += line + "\n";
-                                    }
-                                    mess_file.close();
-                                    info_file1.close();
-                                } else {
-                                    logger.log(LogLevel::ERROR, "Error opening files: " + mess_path + " and " + info_path);
-                                }
-                                
-                                const char * message_s = m.c_str();
-
-                                spawn_status = send(message_s,pipe_name_spawn0, pipe_name_spawn1, logger);
-
-                            }
-                        }
+                         
+                        pair<bool,string> p = send_message(local_file1, pipe_name_spawn0, pipe_name_spawn1, logger, filename_without_extension, info_path, file, line);
+                        spawn_status = p.first;
                         local_file1.close();
                     }
                     if(!spawn_status){
-                        logger.log(LogLevel::ERROR, "Error spawning message to user: " + receiver);
                         file.close();
                         continue;
-                    }else {
-
+                    }else {                        
+                        // Change the status of the message to DONE
                         string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
                         int status = system(sedCommand.c_str());
                         if (status == -1) {
