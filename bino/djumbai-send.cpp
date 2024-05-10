@@ -57,7 +57,7 @@ public:
     }
 
 private:
-    std::ofstream logFile;
+    ofstream logFile;
 };
 
 
@@ -150,7 +150,7 @@ bool send(const char * message,const char * pipe0, const char * pipe1, Logger& l
         }
 
         if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-            logger.log(LogLevel::INFO, "file removed successfully");
+            logger.log(LogLevel::INFO, "File removed successfully");
             close(fd_clean1);
             break;
         }else{

@@ -8,44 +8,94 @@
 #include <pwd.h>
 #include <sys/wait.h> 
 #include <cstring>
+#include <fstream>
 
 using namespace std;
 using namespace filesystem;
 
-bool validate_uid(const uid_t uid) {
+enum class LogLevel { INFO, WARNING, ERROR };
 
-    struct passwd *pw = getpwuid(uid);
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
 
-    if (pw != NULL) {
-        cout << "LSPAWN: O UID " << uid << " corresponde ao usuário: " << pw->pw_name << endl;
-        return true;
-    } else {
-        cout << "LSPAWN: UID " << uid << " não corresponde a nenhum usuário válido." << endl;
-        return false;
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no consola
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
     }
-}
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    ofstream logFile;
+};
 
 bool folderExists(const char *folderPath) {
     struct stat info;
     return stat(folderPath, &info) == 0 && S_ISDIR(info.st_mode);
 }
 
-int createFolder(const char * path) {
+int createFolder(const char * path, Logger& logger) {
 
     if (folderExists(path)){
-        cout << "LSPAWN: Folder already exists. Skipping creation." << endl;
+        logger.log(LogLevel::INFO, "Folder already exists!");
     }else{
         if (mkdir(path, 0700) == 0){
-            cout << "LSPAWN: Folder created successfully!" << endl;
+            logger.log(LogLevel::INFO, "Folder created successfully!");
         }else{
-            cerr << "LSPAWN: Error creating folder!" << endl;
+            logger.log(LogLevel::ERROR, "Error creating folder!");
             return 1;
         }
     }
     return 0;
 }
 
-int parseUID(const string &input) {
+bool validate_uid(const uid_t uid,Logger& logger){
+    // Informações do do utilizador com UID
+    struct passwd *pw = getpwuid(uid);
+
+    if (pw != NULL){
+        // UID válido
+        logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
+        return true;
+    }else{
+        // UID inválido
+        logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
+        return false;
+    }
+}
+
+int parseUID(const string &input, Logger& logger) {
 
     size_t pos = input.find('\n');
 
@@ -68,37 +118,56 @@ int parseUID(const string &input) {
             if (isdigit(ch)) {
                 numberStr += ch;
             } else {
-                throw invalid_argument("Invalid character inside brackets");
+                return -1;
             }
         }
     }
+    int number = -1;
+    try {
+        number = stoi(numberStr);
+    } catch(const std::exception& e) {
+        logger.log(LogLevel::ERROR, "Error parsing UID");
+    }
+    
 
-    return stoi(numberStr);
+    return number;
 }
 
 int main(){
+    Logger logger("/var/log/djumbai-lspawn.log");
+    
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";
     
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        cerr << "LSPAWN: Erro ao obter o diretório atual." << endl;
+        logger.log(LogLevel::ERROR, "Error getting current working directory");
         return 1;
     }
 
+    int count0 = 0;
+    int count1 = 0;
     while (true) {
-        cout << "LSPAWN: Esperando por dados no pipe...\n";
+        logger.log(LogLevel::INFO, "Waiting for data from pipe");
         int fdspawn0 = open(pipe_name_spawn0, O_RDONLY);
         if (fdspawn0 == -1) {
-            cerr << "LSPAWN: Erro ao abrir o pipe0.\n";
-            return 1;
+            logger.log(LogLevel::ERROR, "Error opening pipe0");
+            continue;
         }
 
         int fdspawn1 = open(pipe_name_spawn1, O_WRONLY | O_TRUNC);
         if (fdspawn1 == -1) {
-            cerr << "LSPAWN: Erro ao abrir o pipe1.\n";
-            return 1;
+            logger.log(LogLevel::ERROR, "Error opening pipe1");
+            usleep(1000);
+            count0++;
+            if(count0 == 10){
+                logger.log(LogLevel::ERROR, "Error opening pipe1");
+                return 1;
+            }
+            continue;
+        }else{
+            count0 = 0;
         }
 
         char buffer[1024];
@@ -106,22 +175,18 @@ int main(){
 
         bytesRead = read(fdspawn0, buffer, sizeof(buffer));
         if (bytesRead == -1) {
-            cerr << "LSPAWN: Erro ao ler do pipe.\n";
+            logger.log(LogLevel::ERROR, "Error reading from pipe");
             close(fdspawn0);
-            continue; // Continue para a próxima iteração do loop
+            usleep(1000);
+            count1++;
+            if(count1 == 10){
+                logger.log(LogLevel::ERROR, "Error reading from pipe");
+                return 1;
+            }
+            continue;
+        }else{
+            count1 = 0;
         }
-
-        struct stat st;
-        if (fstat(fdspawn0, &st) == -1) {
-            cerr << "LSPAWN: Erro ao obter informações do pipe.\n";
-            close(fdspawn0);
-            continue; // Continue para a próxima iteração do loop
-        }
-        uid_t uid = st.st_uid;
-        cout << "LSPAWN: UID do processo que enviou o pipe[spawn]: " << uid << endl;
-
-        // Imprime os dados recebidos e o UID do processo remoto
-        cout << "LSPAWN: Dados recebidos do pipe: " << buffer << endl;
 
         close(fdspawn0);
 
@@ -132,50 +197,44 @@ int main(){
         const char * email = buf.c_str();
 
         string str(buffer);
-        cout << "LSPAWN: UID: " << parseUID(buffer) << endl;
-        uid_t id = parseUID(buffer);
-        if (!validate_uid(id)) {
-            cout << "LSPAWN: UID inválido" << endl;
-            //TODO: fazer qualquer coisa
-        } // se o uid nao for valido
+        int n = parseUID(str, logger);
+        if(n == -1){
+            logger.log(LogLevel::ERROR, "Error parsing UID");
+            continue;
+        }
+        uid_t id = n;
+        if (!validate_uid(id, logger)) {
+            logger.log(LogLevel::ERROR, "Invalid UID");
+            continue;
+        }
 
-        const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);
-        createFolder(folder_dir.c_str());
+        const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);  
+        createFolder(folder_dir.c_str(), logger);
         chown(folder_dir.c_str(), id, id);
         chmod(folder_dir.c_str(), 0700);
         
         pid_t pid = fork();
         if (pid == -1) {
-            cerr << "LSPAWN: Failed to fork\n";
+            logger.log(LogLevel::ERROR, "Failed to fork");
             return 1;
         }
 
         if (pid == 0) {
-
-            cout << "LSPAWN: ID: " << id << endl;
             setuid(id);
-            
-
-            cout << "LSPAWN: UID do processo PID0: " << getuid() << endl;
-
-            cout << "LSPAWN: Executando o programa djumbai-local\n";
-
+        
+            logger.log(LogLevel::INFO, "Executing djumbai-local program with uid: " + to_string(getpid()));
             
             execl("/var/DJUMBAI/bin/djumbai-local", "djumbai-local", email, NULL);
 
-            
-            cerr << "LSPAWN: Failed to execute the program lspawn\n" << strerror(errno) << endl;
-            return 1;
+            return 0;
         }
         else {
-            cout << "LSPAWN: Programa djumbai-local teste\n";
 
             //==============================================
 
-            // Esperar pelo processo filho
             int status;
             waitpid(pid, &status, 0);
-            cout << "LSPAWN: Processo filho terminou com status: " << status << endl;
+            logger.log(LogLevel::INFO, "Child process terminated with status: " + to_string(status));
             if (status != 0) {
                 err = true;
             }
@@ -187,7 +246,7 @@ int main(){
                 const char* message_p = message_err.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
-                    cerr << "LSPAWN: Erro ao escrever no pipe.\n";
+                    logger.log(LogLevel::ERROR, "Error writing to pipe");
                     close(fdspawn1);
                     return 1;
                 }
@@ -195,12 +254,11 @@ int main(){
                 const char* message_p = message_ok.c_str();
                 ssize_t bytesWritten = write(fdspawn1, message_p, strlen(message_p) + 1);
                 if (bytesWritten == -1) {
-                    cerr << "LSPAWN: Erro ao escrever no pipe.\n";
+                    logger.log(LogLevel::ERROR, "Error writing to pipe");
                     close(fdspawn1);
                     return 1;
                 }
             }
-            cout << "LSPAWN: Escrevi no pipe fdspawn1: " << message_ok << endl;
 
             close(fdspawn1);
         }

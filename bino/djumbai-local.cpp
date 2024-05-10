@@ -14,21 +14,68 @@
 
 using namespace std;
 
+enum class LogLevel { INFO, WARNING, ERROR };
+
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no consola
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    ofstream logFile;
+};
+
 
 bool folderExists(const char *folderPath) {
     struct stat info;
     return stat(folderPath, &info) == 0 && S_ISDIR(info.st_mode);
 }
 
-int createFolder(const char * path) {
+int createFolder(const char * path, Logger& logger) {
 
     if (folderExists(path)){
-        cout << "LOCAL: Folder already exists. Skipping creation." << endl;
+        logger.log(LogLevel::INFO, "Folder already exists");
     }else{
         if (mkdir(path, 0700) == 0){
-            cout << "LOCAL: Folder created successfully!" << endl;
+            logger.log(LogLevel::INFO, "Folder created successfully");
         }else{
-            cerr << "LOCAL: Error creating folder!" << endl;
+            logger.log(LogLevel::ERROR, "Error creating folder");
             return 1;
         }
     }
@@ -36,21 +83,19 @@ int createFolder(const char * path) {
 }
 
 int main(int argc, char *argv[]) {
-
-    cout << "LOCAL: process UID: " << getuid() << endl;
+    Logger logger("/var/DJUMBAI/djumbai-local.log");
     
     // recebe email por parametro 
     if (argc != 2) {
-        cerr << "LOCAL: Número de argumentos inválido.\n";
+        logger.log(LogLevel::ERROR, "Usage: djumbai-local <email>");
         return 1;
     }
     
     char *email = argv[1];
-    cout << "LOCAL: Email: " << email << endl;
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        cerr << "LOCAL: Erro ao obter o diretório atual." << endl;
+        logger.log(LogLevel::ERROR, "Error getting current working directory");
         return 1;
     }
 
@@ -62,45 +107,29 @@ int main(int argc, char *argv[]) {
     const char *curPath = cur_dir.c_str();
     const char *newPath = new_dir.c_str();
 
-    // cout << "LOCAL: Folder path: " << folderPath << endl;
-    cout << "LOCAL: Cur path: " << curPath << endl;
-    cout << "LOCAL: New path: " << newPath << endl;
-
     // Check if the folder already exists
-    createFolder(curPath);
-    createFolder(newPath);
-
+    if (createFolder(curPath, logger) || createFolder(newPath, logger)) {
+        return 1;
+    }
     
     //get current time
     time_t now = time(0);
     // get pid
     pid_t pid = getpid();
 
-    cout << "LOCAL: Current time: " << now << endl;
-    cout << "LOCAL: PID: " << pid << endl;
-
     // create file 
     string file_path = "/var/DJUMBAI/users/" + to_string(getuid()) + "/new/" + to_string(now) + "." + to_string(pid) + ".mdjumbai";
-    cout << "LOCAL: File path: " << file_path << endl;
 
     ofstream file(file_path);
     chmod(file_path.c_str(), 0700);
     if (!file.is_open()) {
-        cerr << "LOCAL: Erro ao criar ficheiro." << endl;
+        logger.log(LogLevel::ERROR, "Error creating file");
         return 1;
     }
 
     file << email;
     file.close();
-
-
-    bool err = false;
-    string message_err = "Erro ao enviar mensagem!";
-    string message_ok = "Mensagem entregue com sucesso!";
-
-    if (err) {
-        return 1;
-    }
+    logger.log(LogLevel::INFO, "Email delivered successfully");
 
     return 0;
 }

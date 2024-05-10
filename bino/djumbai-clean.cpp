@@ -11,22 +11,82 @@
 using namespace std;
 using namespace filesystem;
 
+enum class LogLevel { INFO, WARNING, ERROR };
+
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        cout << formattedMessage;
+
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        logFile.close();
+    }
+
+private:
+    std::ofstream logFile;
+};
+
 int main() {
+    Logger logger("/var/log/djumbai-clean.log");
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
-
+    int count0 = 0;
+    int count1 = 0;
     while (true) {
-        cout << "CLEAN: Esperando por dados no pipe...\n";
+        logger.log(LogLevel::INFO, "Waiting for data in pipe...");
         int fd0 = open(pipe_name_clean0, O_RDONLY);
         if (fd0 == -1) {
-            cerr << "CLEAN: Erro ao abrir o pipe clean_0.\n" << strerror(errno);
-            return 1;
+            logger.log(LogLevel::ERROR, "Error opening pipe0");
+            usleep(1000);
+            count0++;
+            if(count0 == 10){
+                logger.log(LogLevel::ERROR, "Error opening pipe1");
+                return 1;
+            }
+            continue;
+        }else{
+            count0 = 0;
         }
 
         int fd1 = open(pipe_name_clean1, O_WRONLY | O_TRUNC);
         if (fd1 == -1) {
-            cerr << "CLEAN: Erro ao abrir o pipe clean_1.\n"  << strerror(errno);
-            return 1;
+            logger.log(LogLevel::ERROR, "Error opening pipe1");
+            usleep(1000);
+            count1++;
+            if(count1 == 10){
+                logger.log(LogLevel::ERROR, "Error opening pipe1");
+                return 1;
+            }
+            continue;
+        }else{
+            count1 = 0;
         }
 
 
@@ -35,62 +95,44 @@ int main() {
 
         bytesRead = read(fd0, buffer, sizeof(buffer));
         if (bytesRead == -1) {
-            cerr << "CLEAN: Erro ao ler do pipe.\n";
+            logger.log(LogLevel::ERROR, "Error reading from pipe");
             close(fd0);
             continue; // Continue para a próxima iteração do loop
         }
-
-        // Obtém o UID do processo que enviou o pipe (exemplo)
-        struct stat st;
-        if (fstat(fd0, &st) == -1) {
-            cerr << "CLEAN: Erro ao obter informações do pipe.\n";
-            close(fd0);
-            continue; // Continue para a próxima iteração do loop
-        }
-        uid_t uid = st.st_uid;
 
         close(fd0);
-        // Imprime os dados recebidos e o UID do processo remoto
-        cout << "CLEAN: Dados recebidos do pipe: " << buffer << endl;
-        cout << "CLEAN: UID do processo que enviou o pipe: " << uid << endl; 
-
-        //TODO: este uid tem que ser igual ao uid do qmails que tem que estar num ficheiro
         
         // remove file received
         string path;
         istringstream iss(buffer);
         bool err = false;
-        while (getline(iss, path))
-        {
-            cout << "CLEAN: Removing: "<< path << endl;
-            if (!remove(path))
-            {
+        while (getline(iss, path)) {
+            logger.log(LogLevel::INFO, "Removing file: " + path);
+            if (!remove(path)) {
                 err = true;
             }
             
         }
         string message_err = "Erro ao remover ficheiro!";
         string message_ok = "Ficheiro removido com sucesso!";
-        if (err)
-        {
+        if (err) {
             const char* message_p = message_err.c_str();
             ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
             if (bytesWritten == -1) {
-                cerr << "Erro ao escrever no pipe.\n";
+                logger.log(LogLevel::ERROR, "Error writing to pipe");
                 close(fd1);
-                return 1;//TODO: VER ESTE RETURN
+                continue;
             }
         }else{
             const char* message_p = message_ok.c_str();
             ssize_t bytesWritten = write(fd1, message_p, strlen(message_p) + 1);
             if (bytesWritten == -1) {
-                cerr << "Erro ao escrever no pipe.\n";
+                logger.log(LogLevel::ERROR, "Error writing to pipe");
                 close(fd1);
                 return 1;
             }
         }
         
-
         close(fd1);
     }
 
