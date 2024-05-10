@@ -87,8 +87,7 @@ int main(){
         return 1;
     }
 
-    while (true)
-    {
+    while (true) {
         cout << "LSPAWN: Esperando por dados no pipe...\n";
         int fdspawn0 = open(pipe_name_spawn0, O_RDWR);
         if (fdspawn0 == -1) {

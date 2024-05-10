@@ -13,90 +13,195 @@
 using namespace std;
 using namespace filesystem;
 
+enum class LogLevel { INFO, WARNING, ERROR };
 
-bool validate_uid(const uid_t uid) {
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
 
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no consola
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    std::ofstream logFile;
+};
+
+
+bool validate_uid(const uid_t uid,Logger& logger){
+    // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
-    if (pw != NULL) {
-        cout << "SEND: O UID " << uid << " corresponde ao usuário: " << pw->pw_name << endl;
+    if (pw != NULL){
+        // UID válido
+        logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
         return true;
-    } else {
-        cout << "SEND: UID " << uid << " não corresponde a nenhum usuário válido." << endl;
+    }else{
+        // UID inválido
+        logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
         return false;
     }
 }
 
-int parseUID(const string &str) {
-    bool insideBrackets = false;
+int parseUID(const string str, bool insideBrackets) {
     string numberStr;
-
+    string oiut = "";
     for (char ch : str) {
-        if (ch == '[') {
+        string ch1 = string(1,ch);
+        if (ch1 == "["){
             insideBrackets = true;
-        } else if (ch == ']') {
-            insideBrackets = false;
+        } else if (ch1 == "]") {
             break; 
         } else if (insideBrackets) {
             if (isdigit(ch)) {
                 numberStr += ch;
             } else {
-                throw invalid_argument("Invalid character inside brackets");
+                return -1;
             }
         }
     }
 
-    return stoi(numberStr);
+    int num = stoi(numberStr);
+
+    return num;
 }
 
-bool Rois(const char * message,const char * pipe0, const char * pipe1){
+bool send(const char * message,const char * pipe0, const char * pipe1, Logger& logger){
     for (int i = 0; i < 3; i++) { // 3 tentativas
-            int fd_clean0 = open(pipe0, O_RDWR);
-            if (fd_clean0 == -1) {
-                cerr << "SEND: Erro ao abrir o pipe" << pipe0 << endl;
-                return 1;
-            }
-            ssize_t bytesWritten = write(fd_clean0, message, strlen(message) + 1);
-            cout << "SEND: escrevi no pipe :" << message << " na " << i << endl;
-            if (bytesWritten == -1) {
-                cerr << "SEND: Erro ao escrever no pipe.\n";
-                close(fd_clean0);
-            }else{
-                close(fd_clean0);
-            }
-
-            // read status code
-            int fd_clean1 = open(pipe1, O_RDWR);
-            if (fd_clean1 == -1) {
-                cerr << "SEND: Erro ao abrir o pipe" << pipe1 << endl;
-                return 1;
-            }
-            char buffer[1024];
-            ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
-            if (bytesRead == -1) {
-                cerr << "SEND: Erro ao ler do pipe.\n";
-                close(fd_clean1);
-            }
-
-            if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
-                cout << "SEND: Ficheiros removidos com sucesso!\n";
-                close(fd_clean1);
-                break;
-            }else{
-                close(fd_clean1);
-            }
-            if(i == 2){
-                //TODO: Deu erro, o que fazer?
-                return false;
-            }
+        int fd_clean0 = open(pipe0, O_RDWR);
+        if (fd_clean0 == -1) {
+            logger.log(LogLevel::ERROR, "Error opening pipe " + string(pipe0));
+            return 1;
         }
-        return true;
+        ssize_t bytesWritten = write(fd_clean0, message, strlen(message) + 1);
+        logger.log(LogLevel::INFO, "SEND: wrote to pipe " + string(pipe0));
+        
+        if (bytesWritten == -1) {
+            logger.log(LogLevel::ERROR, "Error writing to pipe");
+            close(fd_clean0);
+        }else{
+            close(fd_clean0);
+        }
+
+        // read status code
+        int fd_clean1 = open(pipe1, O_RDWR);
+        if (fd_clean1 == -1) {
+            logger.log(LogLevel::ERROR, "Error opening pipe " + string(pipe1));
+            return 1;
+        }
+        char buffer[1024];
+        ssize_t bytesRead = read(fd_clean1, buffer, sizeof(buffer));
+        if (bytesRead == -1) {
+            logger.log(LogLevel::ERROR, "Error reading from pipe");
+            close(fd_clean1);
+        }
+
+        if (strcmp(buffer, "Ficheiro removido com sucesso!") == 0) {
+            logger.log(LogLevel::INFO, "file removed successfully");
+            close(fd_clean1);
+            break;
+        }else{
+            close(fd_clean1);
+        }
+        if(i == 2){
+            logger.log(LogLevel::ERROR, "Three attempts to send the message failed");
+            return false;
+        }
+    }
+    return true;
 }
+
+
+// void PIKA(){}
+
+// int startup(string folderPath, Logger& logger, const char *pipe_name_clean0, const char *pipe_name_clean1, const char *pipe_name_spawn0, const char *pipe_name_spawn1) {
+//     for (const auto& entry : directory_iterator(folderPath)) {
+//         if (is_regular_file(entry)) {
+//             ifstream file(entry.path());
+//             if (file.is_open()) {
+//                 string filename_without_extension = entry.path().filename().stem().string();
+//                 string line;
+//                 bool flag = false;
+//                 string sender, receiver, subject, group;
+//                 //func
+//                 PIKA(sender, receiver, subject, group);
+
+//                 // delete files if they exist
+//                 string info_path = "/var/DJUMBAI/queue/info/" + filename_without_extension + ".mdjumbai";
+//                 string local_path = "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
+                
+
+//                 if (exists(info_path)) {
+//                     remove(info_path);
+//                 }
+//                 if (exists(local_path)) {
+//                     remove(local_path);
+//                 }
+
+//                 // create new info and local files
+//                 ofstream info_file(info_path);
+//                 ofstream local_file(local_path);
+//                 if (info_file.is_open() && local_file.is_open()) {
+//                     if(flag)
+//                         info_file << group << "\n";
+//                     else
+//                         info_file << "<NO.GROUP.>\n";
+//                     info_file << sender << "\n";
+//                     info_file << subject << "\n";
+//                     info_file.close();
+                    
+//                     local_file << '[' << receiver << "]\n" << "NOT DONE" << "\n";
+//                     local_file.close();
+
+//                 } else {
+//                     logger.log(LogLevel::ERROR, "Error creating files: " + info_path + " and " + local_path);
+//                 }
+                
+//                 //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
+//                 XERECA();
+//             } else {
+//                 logger.log(LogLevel::ERROR, "Error opening file: " + string(entry.path()));
+//             }
+//         }
+//     }
+// }
 
 int main() {
 
-    cout << "uid_send: " << getuid() << endl;
-
+    Logger logger("/var/DJUMBAI/log/djumbai-send.log");
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 
@@ -105,32 +210,27 @@ int main() {
 
     char cwd[1024];
     if (getcwd(cwd, sizeof(cwd)) == NULL) {
-        cerr << "SEND: Erro ao obter o diretório atual." << endl;
+        logger.log(LogLevel::ERROR, "Error getting current directory");
         return 1;
     }
 
     string folderPath = "/var/DJUMBAI/queue/todo";
     
-    
+    logger.log(LogLevel::INFO, "Starting DJUMBAI send service...");
 
-    cout << "SEND: Iniciando o envio de mensagens...\n";
     if (system("ls -la /var/DJUMBAI/queue/todo") == -1) {
-        cerr << "Erro ao executar o comando." << endl;
+        logger.log(LogLevel::ERROR, "Error executing ls command on /var/DJUMBAI/queue/todo folder");
         return 1;
     }
 
-    cout << "SEND: Folder path: " << folderPath << endl;
+    //TODO: PIPOKINHA
 
     while (true){
-        cout << "UP" << endl;
         for (const auto& entry : directory_iterator(folderPath)) {
-            cout << "SEND: Verificando o arquivo: " << entry.path() << "\n";
             if (is_regular_file(entry)) {
                 ifstream file(entry.path());
                 if (file.is_open()) {
                     string filename_without_extension = entry.path().filename().stem().string();
-                    cout << "SEND: Abrindo o arquivo: " << filename_without_extension << "\n";
-
                     string line;
                     bool flag = false;
                     string sender, receiver, subject, group;
@@ -138,15 +238,37 @@ int main() {
                         if (line == "SENDER") {
                             getline(file, line);
                             sender = line;
-                            //validate_uid(parseUID(sender)); //TODO: o que fazer se nao for valido?
+                            int uid = parseUID(sender,true);
+                            if(uid == -1){
+                                logger.log(LogLevel::ERROR, "Sender "+sender+" is invalid");
+                                file.close();
+                                continue;
+                            } else {
+                                if(!validate_uid(uid,logger)){
+                                    logger.log(LogLevel::ERROR, "Sender "+sender+" is invalid");
+                                    file.close();
+                                    continue;
+                                }
+                            }
                         } else if (line == "RECEIVER") {
                             getline(file, line);
                             receiver = line; 
-                            //validate_uid(parseUID(receiver));//TODO: o que fazer se nao for valido?
+                            int uid = parseUID(receiver, true);
+                            if(uid == -1){
+                                logger.log(LogLevel::ERROR, "Receiver "+receiver+" is invalid");
+                                file.close();
+                                continue;
+                            }else {
+                                if(!validate_uid(uid,logger)){
+                                    logger.log(LogLevel::ERROR, "Receiver "+receiver+" is invalid");
+                                    file.close();
+                                    continue;
+                                }
+                            }
                         } else if (line == "SUBJECT") {
                             getline(file, line);
                             if (line.length() > 200) {
-                                //?????????????
+                                logger.log(LogLevel::WARNING, "Subject is too long, truncating to 200 characters");
                                 subject = line.substr(0, 200);
                             } else {
                                 subject = line;
@@ -182,19 +304,24 @@ int main() {
                         info_file << subject << "\n";
                         info_file.close();
                         
-                        //TODO: ver como vamos fazer quando tiver mais do que um
                         local_file << '[' << receiver << "]\n" << "NOT DONE" << "\n";
                         local_file.close();
 
                     } else {
-                        cerr << "SEND: Erro ao criar os arquivos: " << info_path << " e " << local_path << "\n";
+                        logger.log(LogLevel::ERROR, "Error creating files: " + info_path + " and " + local_path);
                     }
                     
                     //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
                     string message = "/var/DJUMBAI/queue/todo/" + filename_without_extension + ".lnk" + "\n" + "/var/DJUMBAI/queue/intd/" + filename_without_extension + ".mdjumbai";
                     const char * message_p = message.c_str();
                     
-                    Rois(message_p, pipe_name_clean0, pipe_name_clean1);
+                    if(!send(message_p, pipe_name_clean0, pipe_name_clean1, logger)) {
+                        logger.log(LogLevel::ERROR, "Error sending message to clean");
+                        file.close();
+                        continue;
+                    }else {
+                        logger.log(LogLevel::INFO, "Message sent to clean");
+                    }
                     // ------------ LSPAWN ------------
                     bool spawn_status;
                     ifstream local_file1(local_path);
@@ -205,10 +332,10 @@ int main() {
                             string status = line;
 
                             if (status == "DONE") {
+                                local_file1.close();
+                                file.close();
                                 continue;
                             } else {
-                                int int_receiver_uid = parseUID(receiver_uid);
-                                cout << "SEND: Int Receiver UID: " << int_receiver_uid << endl;
                                 
                                 string mess_path = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai"; 
                                 ifstream mess_file(mess_path);
@@ -234,30 +361,28 @@ int main() {
                                     mess_file.close();
                                     info_file1.close();
                                 } else {
-                                    cerr << "SEND: Erro ao abrir os arquivos: " << mess_path << " e " << info_path << "\n";
+                                    logger.log(LogLevel::ERROR, "Error opening files: " + mess_path + " and " + info_path);
                                 }
                                 
                                 const char * message_s = m.c_str();
 
-                                spawn_status = Rois(message_s,pipe_name_spawn0, pipe_name_spawn1);
-                                cout << "SEND: Respota do lspawn: " << spawn_status << endl;
+                                spawn_status = send(message_s,pipe_name_spawn0, pipe_name_spawn1, logger);
 
-                                if (!spawn_status) {
-                                    cerr << "SEND: Mensagem não enviada!.\n";
-                                    //TODO: O que fazer se a mensagem não for enviada?
-                                }
                             }
                         }
+                        local_file1.close();
                     }
-                    // faltam aqui umas merdas!!!! se o spawn falhar, devia repetir 3 vezes e se der merda
-                    // nas 3 tem de meter a mensagem numa pasta especial????
-                    if (spawn_status) {
+                    if(!spawn_status){
+                        logger.log(LogLevel::ERROR, "Error spawning message to user: " + receiver);
+                        file.close();
+                        continue;
+                    }else {
 
                         string sedCommand = "sed -i \"/^\\[" + receiver + "\\]/{N;s/NOT DONE/DONE/g;}\" " + "/var/DJUMBAI/queue/local/" + filename_without_extension + ".mdjumbai";
                         int status = system(sedCommand.c_str());
-
-                        cout << "SEND: Status: " << status << endl;
-
+                        if (status == -1) {
+                            logger.log(LogLevel::ERROR, "Error executing sed command");
+                        }
 
                         // Remove the file from the mess folder
                         remove(info_path);
@@ -265,12 +390,17 @@ int main() {
                         message = "/var/DJUMBAI/queue/mess/" + filename_without_extension + ".mdjumbai";
                         const char *message_k = message.c_str();
                         
-                        Rois(message_k, pipe_name_clean0, pipe_name_clean1);
-
-                        file.close();
+                        if(send(message_k, pipe_name_clean0, pipe_name_clean1, logger)){
+                            logger.log(LogLevel::INFO, "Message sent to clean");
+                        }else{
+                            logger.log(LogLevel::ERROR, "Error sending message to clean");
+                            file.close();
+                            continue;
+                        }
                     }
+                    file.close();
                 } else {
-                    cerr << "SEND: Erro ao abrir o arquivo: " << entry.path() << "\n";
+                    logger.log(LogLevel::ERROR, "Error opening file: " + string(entry.path()));
                 }
             }
         }

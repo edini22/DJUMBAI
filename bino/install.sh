@@ -6,6 +6,7 @@ BOOT_DIR="$INSTALL_DIR/boot"
 QUEUE_DIR="$INSTALL_DIR/queue"
 USERS_DIR="$INSTALL_DIR/users"
 GROUP_DIR="$INSTALL_DIR/groups"
+LOGS_DIR="$INSTALL_DIR/log"
 
 # Função para obter o UID de um utilizador
 get_user_uid() {
@@ -28,7 +29,7 @@ uid_userg=$(get_user_uid "$userg")
 
 
 # Criar diretório de instalação
-echo "A criar diretorias bin ..."
+
 mkdir -p "$BIN_DIR"
 
 cp ./djumbai-inject ./djumbai-queue ./djumbai-send ./djumbai-clean ./djumbai-lspawn ./djumbai-local ./djumbai-check ./djumbai-groups ./djumbai-group-manager "$BIN_DIR"
@@ -57,10 +58,9 @@ chown "$userg" "$BIN_DIR/djumbai-group-manager"
 chmod 4101 "$BIN_DIR/djumbai-group-manager"
 # chmod u+s "$BIN_DIR/djumbai-group-manager"
 
-echo "Diretorias bin criadas!"
+echo "/bin directory created"
 
 # Criar diretório boot
-echo "A cria diretoria boot ..."
 
 mkdir -p "$BOOT_DIR"
 chmod 500 "$BOOT_DIR"
@@ -68,11 +68,9 @@ chmod 500 "$BOOT_DIR"
 cp ../boot/djumbai-start "$BOOT_DIR"
 chmod 100 "$BOOT_DIR/djumbai-start"
 
-echo "Diretoria boot criada!"
+echo "/boot directory created"
 
-# Criar diretório queue
-
-echo "A criar diretorias queue ..."
+# Criar diretoria queue
 
 mkdir -p "$QUEUE_DIR"
 chmod 755 "$QUEUE_DIR"
@@ -101,16 +99,14 @@ mkdir -p "$QUEUE_DIR/todo"
 chown "$userq":"$users" "$QUEUE_DIR/todo"
 chmod 2350 "$QUEUE_DIR/todo"
 
-echo "Diretorias queue criadas!"
+echo "/queue directory created"
 
-# Criar diretório users
-
-echo "A criar diretoria users ..."
+# Criar diretoria users
 
 mkdir -p "$USERS_DIR"
 chmod 755 "$USERS_DIR"
 
-echo "A criar diretoria groups ..."
+echo "/users directory created"
 
 mkdir -p "$GROUP_DIR"
 chown "$userg":"$userq" "$GROUP_DIR"
@@ -120,20 +116,54 @@ mkdir -p "$GROUP_DIR/users"
 chown "$userg" "$GROUP_DIR/users"
 chmod 700 "$GROUP_DIR/users" 
 
-echo "Diretoria groups criadas!"
+echo "/groups directory created"
+
+mkdir -p "$LOGS_DIR"
+touch "$LOGS_DIR/djumbai-inject.log"
+chmod 666 "$LOGS_DIR/djumbai-inject.log"
+
+touch "$LOGS_DIR/djumbai-check.log"
+chmod 666 "$LOGS_DIR/djumbai-check.log"
+
+touch "$LOGS_DIR/djumbai-groups.log"
+chmod 666 "$LOGS_DIR/djumbai-groups.log"
+
+touch "$LOGS_DIR/djumbai-queue.log"
+chown "$userq" "$LOGS_DIR/djumbai-queue.log"
+chmod 660 "$LOGS_DIR/djumbai-queue.log"
+
+touch "$LOGS_DIR/djumbai-send.log"
+chown "$users" "$LOGS_DIR/djumbai-send.log"
+chmod 660 "$LOGS_DIR/djumbai-send.log"
+
+touch "$LOGS_DIR/djumbai-clean.log"
+chown "$userq" "$LOGS_DIR/djumbai-clean.log"
+chmod 660 "$LOGS_DIR/djumbai-clean.log"
+
+touch "$LOGS_DIR/djumbai-lspawn.log"
+chmod 660 "$LOGS_DIR/djumbai-lspawn.log"
+
+touch "$LOGS_DIR/djumbai-local.log"
+chmod 666 "$LOGS_DIR/djumbai-local.log"
+
+touch "$LOGS_DIR/djumbai-group-manager.log"
+chown "$userg" "$LOGS_DIR/djumbai-group-manager.log"
+chmod 660 "$LOGS_DIR/djumbai-group-manager.log"
+
+echo "/logs directory created"
 
 
-# Escrever UIDs num arquivo
 echo -e "$uid_userq" > "$BIN_DIR/uids.txt"
 echo -e "$uid_users" >> "$BIN_DIR/uids.txt"
 echo -e "$uid_userg" >> "$BIN_DIR/uids.txt"
 
-echo "Uids dos utilizadores foram escritos no arquivo uids.txt."
 
-
-echo "Install concluído!"
 
 ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject
 ln -s /var/DJUMBAI/bin/djumbai-check /usr/local/bin/djumbai-check
 ln -s /var/DJUMBAI/bin/djumbai-groups /usr/local/bin/djumbai-groups
 ln -s /var/DJUMBAI/boot/djumbai-start /usr/local/bin/djumbai-start
+
+echo "Symbolic links created"
+
+echo "Installation completed"

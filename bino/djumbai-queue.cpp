@@ -15,8 +15,7 @@ using namespace std;
 using namespace filesystem;
 
 // Estrutura de mensagem
-struct Message
-{
+struct Message{
     char sender[25];
     char receiver[25];
     char message[513];
@@ -24,33 +23,81 @@ struct Message
     int flag;
 };
 
+enum class LogLevel { INFO, WARNING, ERROR };
+
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no consola
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    std::ofstream logFile;
+};
+
 // Deserializar bytes para estrutura
-void deserialize(const char *buffer, Message &obj)
-{
+void deserialize(const char *buffer, Message &obj){
     memcpy(&obj, buffer, sizeof(Message));
 }
 
-bool validate_uid(const uid_t uid){
+bool validate_uid(const uid_t uid,Logger& logger){
     // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
     if (pw != NULL){
         // UID válido
-        cout << "UID " << uid << " matches user: " << pw->pw_name << endl;
+        logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
         return true;
     }else{
         // UID inválido
-        cout << "UID " << uid << " does not match any valid user." << endl;
+        logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
         return false;
     }
 }
 
-int envelope_to_file(string envelope, struct stat fileStat){
+
+
+int envelope_to_file(string envelope, struct stat fileStat,Logger& logger){
     const string path_env = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
     ofstream file(path_env);
     chmod(path_env.c_str(), 0350);
     if (!file.is_open()) {
-        cerr << "Failed to open file for writing.\n";
+        logger.log(LogLevel::ERROR, "Failed to open file for writing");
         return 1;
     }
 
@@ -65,17 +112,14 @@ int envelope_to_file(string envelope, struct stat fileStat){
 
     const string path_link = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
 
-    printf("Link path: %s\n", link_path.c_str());
-
-    if (symlink(path_link.c_str(), (link_path).c_str()) == -1)
-    {
-        cerr << "Erro ao criar o link simbólico." << endl;
+        if (symlink(path_link.c_str(), (link_path).c_str()) == -1){
+        logger.log(LogLevel::ERROR, "Error creating symlink");
         return 1;
     }
     return 0;
 }
 
-int create_mess(string message,string envelope){
+int create_mess(string message,string envelope,Logger& logger){
 
     pid_t pid = getpid();
     const string path = "/var/DJUMBAI/queue/pid/" + to_string(pid) + ".mdjumbai";
@@ -83,9 +127,8 @@ int create_mess(string message,string envelope){
 
     ofstream file(path); 
     chmod(pid_filename, 0700);
-    if (!file.is_open())
-    {
-        cerr << "Failed to open file for writing.\n";
+    if (!file.is_open()){
+        logger.log(LogLevel::ERROR, "Failed to open file for writing");
         return 1;
     }
 
@@ -96,13 +139,10 @@ int create_mess(string message,string envelope){
     struct stat fileStat;
 
     // Usando lstat para obter informações sobre o arquivo, incluindo o inode
-    if (lstat(pid_filename, &fileStat) == -1)
-    {
-        cerr << "Erro ao obter informações sobre o arquivo.\n";
+    if (lstat(pid_filename, &fileStat) == -1){
+        logger.log(LogLevel::ERROR, "Error obtaining archieve information");
         return 1;
     }
-    // Exibir o número do inode
-    cout << "Número do inode de " << pid_filename << ": " << fileStat.st_ino << endl;
 
     const string dest_filename = "/var/DJUMBAI/queue/mess/" + to_string(fileStat.st_ino) + ".mdjumbai";
     const char *dest_dest_filename = dest_filename.c_str();
@@ -117,14 +157,14 @@ int create_mess(string message,string envelope){
         }
         filem.close();
     } else {
-        cerr << "Erro ao abrir o arquivo para leitura.\n";
+        logger.log(LogLevel::ERROR, "Error openning file for reading");
         return 1;
     }
 
     ofstream filem1(dest_dest_filename);
     chmod(dest_dest_filename, 0350);
     if (!filem1.is_open()) {
-        cerr << "Erro ao abrir o arquivo para escrita.\n";
+        logger.log(LogLevel::ERROR, "Failed to open file for writing");
         return 1;
     }
     filem1 << mensagem;
@@ -132,11 +172,11 @@ int create_mess(string message,string envelope){
 
     // remove file
     if (remove(pid_filename) != 0) {
-        cerr << "Erro ao remover o arquivo.\n";
+        logger.log(LogLevel::ERROR, "Error while removing the file");
         return 1;
     }
 
-    if(envelope_to_file(envelope, fileStat) == 1){
+    if(envelope_to_file(envelope, fileStat,logger) == 1){
         return 1;
     }else{
         return 0;
@@ -145,7 +185,7 @@ int create_mess(string message,string envelope){
 }
 
 int main() {
-
+    Logger logger("/var/DJUMBAI/log/djumbai-inject.log");
 
 
     string envelope;
@@ -164,19 +204,10 @@ int main() {
     string receiver = msg.receiver;
     string subject = msg.subject;
     int flag = msg.flag;
-
-    // Exibe as strings recebidas
-    cout << "============================" << endl;
-    cout << "Message: " << message << endl;
-    cout << "Sender: " << sender << endl;
-    cout << "Receiver: " << receiver << endl;
-    cout << "Subject: " << subject << endl;
-    cout << "Flag: " << flag << endl;
-    cout << "============================" << endl;
     
     //validar sender e o receiver(group ou user)
     int id_sender = stoi(sender);
-    if (!validate_uid(id_sender)){
+    if (!validate_uid(id_sender,logger)){
         return 1;
     }
 
@@ -184,18 +215,18 @@ int main() {
 
     if(flag == 0){
         int id_receiver = stoi(receiver);
-        if (!validate_uid(id_receiver)){
+        if (!validate_uid(id_receiver,logger)){
             return 1;
         }
         envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + receiver + "\n" + "SUBJECT\n" + subject + "\n";
         
-        create_mess(message, envelope);
+        create_mess(message, envelope,logger);
 
     } else {//is group
         const string path_group = "/var/DJUMBAI/groups/" + receiver + ".mdjumbai";
         const char *group_filename = path_group.c_str();
         if(!exists(group_filename)){
-            cerr << "Group does not exist.\n";
+            logger.log(LogLevel::ERROR, "Group does not exist");
             return 1;
         } else {
             //verificar se o sender pertence ao grupo
@@ -216,20 +247,20 @@ int main() {
                 }
                 file_group.close();
             } else {
-                cerr << "Erro ao abrir o arquivo para leitura.\n";
+                logger.log(LogLevel::ERROR, "Error openning file for reading");
                 return 1;
             }
             if (!found){
-                cerr << "Sender does not belong to the group.\n";
+                logger.log(LogLevel::ERROR, "Sender does not belong to the group");
                 return 1;
             }
         }
         for(string uid : receivers){
             envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + uid + "\n" + "SUBJECT\n" + subject + "\n" + "GROUP\n" + receiver + "\n";
-            if( create_mess(message, envelope) == 1){
+            if( create_mess(message, envelope,logger) == 1){
                 return 1;
             } else {
-                cout << "Message sent to " << uid << endl;
+                logger.log(LogLevel::INFO, "Message sent to " + uid);
             }
         }
     }

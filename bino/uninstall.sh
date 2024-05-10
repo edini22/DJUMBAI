@@ -12,7 +12,7 @@ userdel -r "$userq"
 userdel -r "$users"
 userdel -r "$userg"
 
-echo "Utilizadores removidos com sucesso."
+echo "Users removed successfully"
 
 rm -r "$INSTALL_DIR"
 rm /usr/local/bin/djumbai-inject
@@ -20,4 +20,6 @@ rm /usr/local/bin/djumbai-check
 rm /usr/local/bin/djumbai-groups
 rm /usr/local/bin/djumbai-start
 
-echo "Pasta DJUMBAI removida com sucesso."
+echo "DJUMBAI removed successfully."
+
+echo "Uninstallation completed"

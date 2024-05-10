@@ -1,12 +1,13 @@
 #include <cstring>
-#include <fcntl.h>
 #include <iostream>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <pwd.h>
-#include <limits> // Adicione esta linha
 #include <cctype>
 #include <string>
+#include <ctime>
+#include <limits>
+#include <fstream>
 
 using namespace std;
 
@@ -18,6 +19,54 @@ struct Message{
     char subject[201];
     int flag = 0;
 };
+enum class LogLevel { INFO, WARNING, ERROR };
+
+class Logger {
+public:
+    Logger(const string& filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string& message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm* localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        // Define o nível do log
+        string levelStr;
+        switch (level) {
+            case LogLevel::INFO:
+                levelStr = "INFO";
+                break;
+            case LogLevel::WARNING:
+                levelStr = "WARNING";
+                break;
+            case LogLevel::ERROR:
+                levelStr = "ERROR";
+                break;
+        }
+
+        // Formata a mensagem de log
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        // Imprime no console
+        cout << formattedMessage;
+
+        // Salva no arquivo de log e descarrega o buffer
+        logFile << formattedMessage;
+        logFile.flush();
+    }
+
+    ~Logger() {
+        // Fecha o arquivo de log ao destruir o objeto Logger
+        logFile.close();
+    }
+
+private:
+    std::ofstream logFile;
+};
+
+
 
 // Serializar estrutura para bytes
 void serialize(const Message &obj, char *buffer){
@@ -25,36 +74,37 @@ void serialize(const Message &obj, char *buffer){
 }
 
 // Verificar se o UID é válido
-bool validate_uid(const uid_t uid){
+bool validate_uid(const uid_t uid,Logger& logger){
     // Informações do do utilizador com UID
     struct passwd *pw = getpwuid(uid);
 
     if (pw != NULL){
         // UID válido
-        cout << "UID " << uid << " matches user: " << pw->pw_name << endl;
+        logger.log(LogLevel::INFO, "UID " + to_string(uid) + " matches user: " + pw->pw_name);
         return true;
     }else{
         // UID inválido
-        cout << "UID " << uid << " does not match any valid user." << endl;
+        logger.log(LogLevel::ERROR, "UID " + to_string(uid) + " does not match any valid user");
         return false;
     }
 }
 
 int main(int argc, char *argv[]){
+    Logger logger("/var/DJUMBAI/log/djumbai-inject.log");
+
 
     int group = 0;
-    if (argc > 2)
-    {
-        cout << "Too many arguments" << endl;
+    if (argc > 2){    
+        logger.log(LogLevel::ERROR, "Too many arguments");
         return 1;
     }
+
     if (argc == 2 && strcmp(argv[1], "-g") == 0){
         group = 1;
     } else if (argc == 2){
-        cout << "Invalid argument" << endl;
+        logger.log(LogLevel::ERROR, "Invalid argument");
         return 1;
     }
-
 
 
     int input_pipe[2];
@@ -62,13 +112,13 @@ int main(int argc, char *argv[]){
 
     // Criação dos pipes de input e output
     if (pipe(input_pipe) == -1 || pipe(output_pipe) == -1){
-        cerr << "INJECT: Error creating pipes\n";
+        logger.log(LogLevel::ERROR, "Error creating pipes");
         return 1;
     }
 
     pid_t pid = fork();
     if (pid == -1){
-        cerr << "INJECT: Failed to fork\n";
+        logger.log(LogLevel::ERROR, "Error creating child process");
         return 1;
     }
 
@@ -76,16 +126,15 @@ int main(int argc, char *argv[]){
         // Fechar as extremidades não utilizadas dos pipes
         close(input_pipe[1]);
         close(output_pipe[0]);
-
         
         // Uso de file descriptors para input e output(troca)
         if (dup2(input_pipe[0], STDIN_FILENO) == -1){
-            cerr << "INJECT: Failed to duplicate input file descriptor\n";
+            logger.log(LogLevel::ERROR, "Failed to duplicate input file descriptor");
             return 1;
         }
 
         if (dup2(output_pipe[1], STDOUT_FILENO) == -1){
-            cerr << "INJECT: Failed to duplicate output file descriptor\n";
+            logger.log(LogLevel::ERROR, "Failed to duplicate output file descriptor");
             return 1;
         }
 
@@ -95,8 +144,7 @@ int main(int argc, char *argv[]){
 
         // Executar o programa djumbai-queue
         execl("/var/DJUMBAI/bin/djumbai-queue", "djumbai-queue", NULL);
-
-        cerr << "INJECT: Failed to execute the program inject\n";
+        logger.log(LogLevel::ERROR, "Failed to execute the program inject");
         return 1;
 
     }else{   
@@ -117,7 +165,7 @@ int main(int argc, char *argv[]){
 
             for (size_t i = 0; i < id_str.length(); ++i){
                 if(!isdigit(id_str[i])){
-                    cerr << "INJECT: Only digits are permited";
+                    logger.log(LogLevel::ERROR, "Only digits are permited");
                     return 1;
                 }
             }
@@ -125,7 +173,7 @@ int main(int argc, char *argv[]){
             int id = stoi(id_str);
 
             // Validar o UID
-            if (!validate_uid(id)){
+            if (!validate_uid(id,logger)){
                 return 1;
             }
 
@@ -151,7 +199,7 @@ int main(int argc, char *argv[]){
 
         // Validar o tamanho do assunto
         if (subjet.length() <= 0 || subjet.length() > 200){
-            cerr << "INJECT: Input message must have size between 0 and 200";
+            logger.log(LogLevel::WARNING, "Input message must have size between 0 and 200");
             return 1;
         }
         
@@ -169,7 +217,7 @@ int main(int argc, char *argv[]){
 
         // Validar o tamanho da mensagem
         if (message.length() <= 0 || message.length() > 512){
-            cerr << "INJECT: Input message must have size between 0 and 512";
+            logger.log(LogLevel::WARNING, "Input message must have size between 0 and 512");
             return 1;
         }
 
@@ -201,7 +249,7 @@ int main(int argc, char *argv[]){
         ssize_t bytesRead;
         while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0){
             buffer[bytesRead] = '\0';
-            cout << "DJUMBAI-QUEUE: " << buffer;
+            cout << "\n" << buffer;
         }
         close(output_pipe[0]);
 
