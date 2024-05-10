@@ -16,6 +16,7 @@ struct Message{
     char receiver[25];
     char message[513];
     char subject[201];
+    int flag = 0;
 };
 
 // Serializar estrutura para bytes
@@ -39,7 +40,23 @@ bool validate_uid(const uid_t uid){
     }
 }
 
-int main(){   
+int main(int argc, char *argv[]){
+
+    int group = 0;
+    if (argc > 2)
+    {
+        cout << "Too many arguments" << endl;
+        return 1;
+    }
+    if (argc == 2 && strcmp(argv[1], "-g") == 0){
+        group = 1;
+    } else if (argc == 2){
+        cout << "Invalid argument" << endl;
+        return 1;
+    }
+
+
+
     int input_pipe[2];
     int output_pipe[2];
 
@@ -90,27 +107,40 @@ int main(){
         //================= USER INPUT =================
         Message msg;
 
-        // Obter o UID do utilizador para quem irá a mensagem
-        string id_str;
-        cout << "Receiver UID: ";
-        cin >> id_str;
+        msg.flag = group;
+        //se for grupo
+        if (group == 0){
+            // Obter o UID do utilizador para quem irá a mensagem
+            string id_str;
+            cout << "Receiver UID: ";
+            cin >> id_str;
 
-        for (size_t i = 0; i < id_str.length(); ++i){
-            if(!isdigit(id_str[i])){
-                cerr << "INJECT: Only digits are permited";
+            for (size_t i = 0; i < id_str.length(); ++i){
+                if(!isdigit(id_str[i])){
+                    cerr << "INJECT: Only digits are permited";
+                    return 1;
+                }
+            }
+
+            int id = stoi(id_str);
+
+            // Validar o UID
+            if (!validate_uid(id)){
                 return 1;
             }
+
+
+            // Guardar na estrutura da mensagem
+            sprintf(msg.receiver, "%d", id); 
+        }else{
+            string group_name;
+            cout << "Receiver group name: ";
+            cin >> group_name;
+
+            strcpy(msg.receiver, group_name.c_str()); 
         }
-
-        int id = stoi(id_str);
-
-        // Validar o UID
-        if (!validate_uid(id)){
-            return 1;
-        }
-
-        // Guardar na estrutura da mensagem
-        sprintf(msg.receiver, "%d", id); 
+        
+        
 
         // Limpar o buffer do cin
         cin.ignore(numeric_limits<streamsize>::max(), '\n');

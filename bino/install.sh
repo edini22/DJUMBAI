@@ -112,7 +112,7 @@ chmod 755 "$USERS_DIR"
 echo "A criar diretoria groups ..."
 
 mkdir -p "$GROUP_DIR"
-chown "$userg":"$users" "$GROUP_DIR"
+chown "$userg":"$userq" "$GROUP_DIR"
 chmod 2750 "$GROUP_DIR"
 
 mkdir -p "$GROUP_DIR/users"
