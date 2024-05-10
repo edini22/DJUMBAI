@@ -132,7 +132,8 @@ int main() {
                     cout << "SEND: Abrindo o arquivo: " << filename_without_extension << "\n";
 
                     string line;
-                    string sender, receiver, subject;
+                    bool flag = false;
+                    string sender, receiver, subject, group;
                     while (getline(file, line)) {
                         if (line == "SENDER") {
                             getline(file, line);
@@ -150,7 +151,11 @@ int main() {
                             } else {
                                 subject = line;
                             }
-                        } 
+                        } else if (line == "GROUP") {
+                            getline(file, line);
+                            flag = true;
+                            group = line;
+                        }
                     }
 
                     // delete files if they exist
@@ -169,6 +174,10 @@ int main() {
                     ofstream info_file(info_path);
                     ofstream local_file(local_path);
                     if (info_file.is_open() && local_file.is_open()) {
+                        if(flag)
+                            info_file << group << "\n";
+                        else
+                            info_file << "<NO.GROUP.>\n";
                         info_file << sender << "\n";
                         info_file << subject << "\n";
                         info_file.close();
@@ -182,7 +191,7 @@ int main() {
                     }
                     
                     //TODO: colocar numa funcao apartir daqui para ao ligar isto verificar se existe ficheiros no local ou info e resolver esses primeiro antes de ir a queue!
-                    string message = "/var/DJUMBAI/queue/todo/" + filename_without_extension + ".lnk" + "\n" + "/var/DJUMB/queue/intd/" + filename_without_extension + ".mdjumbai";
+                    string message = "/var/DJUMBAI/queue/todo/" + filename_without_extension + ".lnk" + "\n" + "/var/DJUMBAI/queue/intd/" + filename_without_extension + ".mdjumbai";
                     const char * message_p = message.c_str();
                     
                     Rois(message_p, pipe_name_clean0, pipe_name_clean1);
@@ -208,8 +217,10 @@ int main() {
 
                                 if (mess_file.is_open() && info_file1.is_open()) {
                                     m += "TO: " + receiver_uid + "\n";
+                                    string temp = "";
+                                    getline(info_file1, temp);
                                     getline(info_file1, line);
-                                    m += "FROM: " + line + "\n";
+                                    m += "FROM: " + line + " " + temp + "\n";
                                     getline(info_file1, line);
                                     m += "SUBJECT: " + line + "\n";
                                     m += "MESSAGE: ";

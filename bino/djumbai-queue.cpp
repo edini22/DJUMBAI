@@ -108,7 +108,6 @@ int create_mess(string message,string envelope){
     const char *dest_dest_filename = dest_filename.c_str();
 
     // move file to mess folder
-    // int resultado = rename(pid_filename, dest_dest_filename);
     string mensagem;
     string line;
     ifstream filem(pid_filename);
@@ -193,7 +192,7 @@ int main() {
         create_mess(message, envelope);
 
     } else {//is group
-        const string path_group = "/var/DJUMBAI/queue/groups/" + receiver + ".mdjumbai";
+        const string path_group = "/var/DJUMBAI/groups/" + receiver + ".mdjumbai";
         const char *group_filename = path_group.c_str();
         if(!exists(group_filename)){
             cerr << "Group does not exist.\n";
@@ -234,47 +233,6 @@ int main() {
             }
         }
     }
-    
-
-
-    
-
-
-    // // ======= IF GROUP  OR   NOT ==========
-
-    // // NOT GROUP
-    // if(flag == 0){
-    //     // write to file
-    //     envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + receiver + "\n" + "SUBJECT\n" + subject + "\n";
-        
-    //     envelope_to_file(envelope, fileStat);
-
-    // } else { // IS GROUP
-
-    //     for(string uid : receivers){
-    //         envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + uid + "\n" + "SUBJECT\n" + subject + "\n" + "GROUP\n" + receiver + "\n";
-    //         envelope_to_file(envelope, fileStat);
-            
-    //     }
-
-    // }
-
-    // int F = 1;
-    // const string path_env = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
-    // for (int i = 0; i < F; i++) {//TODO: ver se podemos mandar paa mais que um
-    //     ofstream file(path_env);
-    //     chmod(path_env.c_str(), 0350);
-    //     if (!file.is_open()) {
-    //         cerr << "Failed to open file for writing.\n";
-    //         return 1;
-    //     }
-
-    //     // Write the message to the file
-    //     file << envelope;
-    //     file.close();
-    // }
-
-    
 
     return 0;
 }

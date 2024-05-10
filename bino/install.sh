@@ -15,7 +15,7 @@ get_user_uid() {
 # Criar utilizadores
 userq="djumbaiq"
 users="djumbais"
-userg="djumbaig"
+userg="djumbaiq"
 
 useradd "$userq"
 useradd "$users"
