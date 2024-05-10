@@ -84,6 +84,7 @@ int main(int argc, char *argv[]) {
     cout << "LOCAL: File path: " << file_path << endl;
 
     ofstream file(file_path);
+    chmod(file_path.c_str(), 0700);
     if (!file.is_open()) {
         cerr << "LOCAL: Erro ao criar ficheiro." << endl;
         return 1;

@@ -34,6 +34,7 @@ void print_message(pair<string, bool> message){
             filePath.replace(pos, 3, "cur");
         }
         rename(OldfilePath.c_str(), filePath.c_str());
+        chmod(filePath.c_str(), 0700);
     }
 }
 
