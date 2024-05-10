@@ -5,7 +5,7 @@ INSTALL_DIR="/var/DJUMBAI"
 # Usuários a serem removidos
 userq="djumbaiq"
 users="djumbais"
-users="djumbaig"
+userg="djumbaig"
 
 # Remover os usuários
 userdel -r "$userq"

@@ -42,12 +42,12 @@ bool validate_uid(const uid_t uid) {
 
 int main(int argc, char *argv[]){
 
-    // -c <name> <users>:criar
-    // -ru <name> <user>:remover user de grupo
-    // -rg <name>       :remover grupo
+    // -c <name> <users>:criar                      //check
+    // -ru <name> <user>:remover user de grupo      //check
+    // -rg <name>       :remover grupo              //check
     // -l <name>        :listar
-    // -lg              :listar grupos
-    // -a <name> <user> :adicionar
+    // -lg              :listar grupos              
+    // -a <name> <user> :adicionar                  //check
 
     if (argc < 2) {
         cout << "Argumentos insuficientes" << endl;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[]){
         cout << "Sender: " << msg.sender << endl;
         if (strcmp(argv[1], "-c") == 0) {
             for (int i = 3; i < argc; i++){
-                cout << "ARGUMENTO: " << argv[i] << endl;
+                //cout << "ARGUMENTO: " << argv[i] << endl;
                 for (size_t d = 0; d < strlen(argv[i]); ++d){
                     
                     if(!isdigit(argv[i][d])) {
@@ -157,6 +157,7 @@ int main(int argc, char *argv[]){
 
                 //Adicionar a lista de membros
                 strcpy(msg.group_members[i-3], argv[i]);
+                cout << "group_members: " << msg.group_members[i-3] << endl;
             }
             strcpy(msg.group_name, argv[2]);
 

@@ -117,7 +117,7 @@ chmod 2750 "$GROUP_DIR"
 
 mkdir -p "$GROUP_DIR/users"
 chown "$userg" "$GROUP_DIR/users"
-chmod 700 "$GROUP_DIR/users"
+chmod 700 "$GROUP_DIR/users" #meter 2?
 
 echo "Diretoria groups criadas!"
 
