@@ -31,8 +31,6 @@ int main() {
 
 
 
-    setuid(1002);//TODO: ir buscar ao file
-    cout <<"uid: " <<getuid() << endl;
     string envelope;
 
     Message msg;
@@ -63,7 +61,8 @@ int main() {
     const string path = "/var/DJUMBAI/queue/pid/" + to_string(pid) + ".mdjumbai";
     const char *pid_filename = path.c_str();
 
-    ofstream file(path); // #TODO: mudar permissoes
+    ofstream file(path); 
+    chmod(pid_filename, 0700);
     if (!file.is_open())
     {
         cerr << "Failed to open file for writing.\n";
@@ -108,7 +107,8 @@ int main() {
     const string path_env = "/var/DJUMBAI/queue/intd/" + to_string(fileStat.st_ino) + ".mdjumbai";
     for (int i = 0; i < F; i++)
     {
-        ofstream file(path_env); // #TODO: mudar permissoes
+        ofstream file(path_env);
+        chmod(path_env.c_str(), 0350);
         if (!file.is_open())
         {
             cerr << "Failed to open file for writing.\n";

@@ -68,7 +68,7 @@ void signalHandler(int signum) {
 
 int main() {
     string line;
-    int djumbaiq, djumbais;
+    int djumbaiq, djumbais,djumbaig;
     string filename = "/var/DJUMBAI/bin/uids.txt";
 
     // signal(SIGINT, signalHandler);
@@ -81,6 +81,8 @@ int main() {
             djumbaiq = stoi(line);
             getline(file, line);
             djumbais = stoi(line);
+            getline(file, line);
+            djumbaig = stoi(line);
             file.close(); 
         } else {
             cerr << "START: Erro ao abrir o arquivo|." << strerror(errno)<< endl;

@@ -86,7 +86,7 @@ chmod 700 "$QUEUE_DIR/local"
 
 mkdir -p "$QUEUE_DIR/intd"
 chown "$userq":"$users" "$QUEUE_DIR/intd"
-chmod 350 "$QUEUE_DIR/intd"
+chmod 2350 "$QUEUE_DIR/intd"
 
 mkdir -p "$QUEUE_DIR/pid"
 chown "$userq" "$QUEUE_DIR/pid"
@@ -94,11 +94,11 @@ chmod 300 "$QUEUE_DIR/pid"
 
 mkdir -p "$QUEUE_DIR/mess"
 chown "$userq":"$users" "$QUEUE_DIR/mess"
-chmod 350 "$QUEUE_DIR/mess"
+chmod 2350 "$QUEUE_DIR/mess"
 
 mkdir -p "$QUEUE_DIR/todo"
 chown "$userq":"$users" "$QUEUE_DIR/todo"
-chmod 350 "$QUEUE_DIR/todo"
+chmod 2350 "$QUEUE_DIR/todo"
 
 echo "Diretorias queue criadas!"
 
@@ -113,7 +113,7 @@ echo "A criar diretoria groups ..."
 
 mkdir -p "$GROUP_DIR"
 chown "$userg":"$users" "$GROUP_DIR"
-chmod 750 "$GROUP_DIR"
+chmod 2750 "$GROUP_DIR"
 
 mkdir -p "$GROUP_DIR/users"
 chown "$userg" "$GROUP_DIR/users"
