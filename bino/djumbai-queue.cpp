@@ -88,15 +88,32 @@ int main() {
     const char *dest_dest_filename = dest_filename.c_str();
 
     // move file to mess folder
-    int resultado = rename(pid_filename, dest_dest_filename);
-
-    if (resultado == 0)
-    {
-        printf("Arquivo renomeado com sucesso.\n");
+    // int resultado = rename(pid_filename, dest_dest_filename);
+    string mensagem;
+    string line;
+    ifstream filem(pid_filename);
+    if (filem.is_open()) {
+        while(getline(filem, line)){
+            mensagem += line + "\n";
+        }
+        filem.close();
+    } else {
+        cerr << "Erro ao abrir o arquivo para leitura.\n";
+        return 1;
     }
-    else
-    {
-        perror("Erro ao renomear o arquivo");
+
+    ofstream filem1(dest_dest_filename);
+    chmod(dest_dest_filename, 0350);
+    if (!filem1.is_open()) {
+        cerr << "Erro ao abrir o arquivo para escrita.\n";
+        return 1;
+    }
+    filem1 << mensagem;
+    filem1.close();
+
+    // remove file
+    if (remove(pid_filename) != 0) {
+        cerr << "Erro ao remover o arquivo.\n";
         return 1;
     }
 
