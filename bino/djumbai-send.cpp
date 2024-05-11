@@ -399,20 +399,22 @@ int main() {
                     }
 
                     // create new info and local files
-                    ofstream info_file(info_path);
-                    ofstream local_file(local_path);
-                    if (info_file.is_open() && local_file.is_open()) {
+                    ofstream info_filef(info_path);
+                    ofstream local_filef(local_path);
+                    if (info_filef.is_open() && local_filef.is_open()) {
                         if (flag)
-                            info_file << group << "\n";
+                            info_filef << group << "\n";
                         else
-                            info_file << "<NO.GROUP.>\n";
-                        info_file << sender << "\n";
-                        info_file << subject << "\n";
-                        info_file.close();
+                            info_filef << "<NO.GROUP.>\n";
+                        info_filef << sender << "\n";
+                        info_filef << subject << "\n";
+                        info_filef.close();
+                        chmod(info_path.c_str(), 0660);
 
-                        local_file << '[' << receiver << "]\n"
+                        local_filef << '[' << receiver << "]\n"
                                    << "NOT DONE" << "\n";
-                        local_file.close();
+                        local_filef.close();
+                        chmod(local_path.c_str(), 0660);
 
                     } else {
                         logger.log(LogLevel::ERROR, "Error creating files: " + info_path + " and " + local_path);

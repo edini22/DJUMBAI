@@ -40,11 +40,11 @@ chown "$userq":"$userq" "$BIN_DIR/djumbai-queue"
 chmod 6111 "$BIN_DIR/djumbai-queue"
 # chmod u+s "$BIN_DIR/djumbai-queue"
 
-chown "$users" "$BIN_DIR/djumbai-send"
-chmod 100 "$BIN_DIR/djumbai-send"
+chown "$users":"$users" "$BIN_DIR/djumbai-send"
+chmod 110 "$BIN_DIR/djumbai-send"
 
-chown "$userq" "$BIN_DIR/djumbai-clean"
-chmod 100 "$BIN_DIR/djumbai-clean"
+chown "$userq":"$userq" "$BIN_DIR/djumbai-clean"
+chmod 110 "$BIN_DIR/djumbai-clean"
 
 chmod 100 "$BIN_DIR/djumbai-lspawn"
 
@@ -54,8 +54,8 @@ chmod 111 "$BIN_DIR/djumbai-check"
 
 chmod 111 "$BIN_DIR/djumbai-groups"
 
-chown "$userg" "$BIN_DIR/djumbai-group-manager"
-chmod 4101 "$BIN_DIR/djumbai-group-manager"
+chown "$userg":"$userg" "$BIN_DIR/djumbai-group-manager"
+chmod 4111 "$BIN_DIR/djumbai-group-manager"
 
 echo "/bin directory created"
 
@@ -78,11 +78,11 @@ mkdir -p "$QUEUE_DIR"
 chmod 755 "$QUEUE_DIR"
 
 mkdir -p "$QUEUE_DIR/info"
-chown "$users" "$QUEUE_DIR/info"
+chown "$users":"$users" "$QUEUE_DIR/info"
 chmod 700 "$QUEUE_DIR/info"
 
 mkdir -p "$QUEUE_DIR/local"
-chown "$users" "$QUEUE_DIR/local"
+chown "$users":"$users" "$QUEUE_DIR/local"
 chmod 700 "$QUEUE_DIR/local"
 
 mkdir -p "$QUEUE_DIR/intd"
@@ -90,8 +90,8 @@ chown "$userq":"$users" "$QUEUE_DIR/intd"
 chmod 2350 "$QUEUE_DIR/intd"
 
 mkdir -p "$QUEUE_DIR/pid"
-chown "$userq" "$QUEUE_DIR/pid"
-chmod 300 "$QUEUE_DIR/pid"
+chown "$userq":"$userq" "$QUEUE_DIR/pid"
+chmod 700 "$QUEUE_DIR/pid"
 
 mkdir -p "$QUEUE_DIR/mess"
 chown "$userq":"$users" "$QUEUE_DIR/mess"
@@ -122,38 +122,38 @@ echo "/groups directory created"
 
 mkdir -p "$LOGS_DIR"
 touch "$LOGS_DIR/djumbai-inject.log"
-chmod 660 "$LOGS_DIR/djumbai-inject.log"
+chmod 600 "$LOGS_DIR/djumbai-inject.log"
 
 touch "$LOGS_DIR/djumbai-check.log"
-chmod 660 "$LOGS_DIR/djumbai-check.log"
+chmod 600 "$LOGS_DIR/djumbai-check.log"
 
 touch "$LOGS_DIR/djumbai-groups.log"
-chmod 660 "$LOGS_DIR/djumbai-groups.log"
+chmod 600 "$LOGS_DIR/djumbai-groups.log"
 
 touch "$LOGS_DIR/djumbai-start-stop.log"
-chmod 660 "$LOGS_DIR/djumbai-start-stop.log"
+chmod 600 "$LOGS_DIR/djumbai-start-stop.log"
 
 touch "$LOGS_DIR/djumbai-queue.log"
-chown "$userq" "$LOGS_DIR/djumbai-queue.log"
-chmod 660 "$LOGS_DIR/djumbai-queue.log"
+chown "$userq":"$userq" "$LOGS_DIR/djumbai-queue.log"
+chmod 600 "$LOGS_DIR/djumbai-queue.log"
 
 touch "$LOGS_DIR/djumbai-send.log"
-chown "$users" "$LOGS_DIR/djumbai-send.log"
-chmod 660 "$LOGS_DIR/djumbai-send.log"
+chown "$users":"$users" "$LOGS_DIR/djumbai-send.log"
+chmod 600 "$LOGS_DIR/djumbai-send.log"
 
 touch "$LOGS_DIR/djumbai-clean.log"
-chown "$userq" "$LOGS_DIR/djumbai-clean.log"
-chmod 660 "$LOGS_DIR/djumbai-clean.log"
+chown "$userq":"$userq" "$LOGS_DIR/djumbai-clean.log"
+chmod 600 "$LOGS_DIR/djumbai-clean.log"
 
 touch "$LOGS_DIR/djumbai-lspawn.log"
-chmod 660 "$LOGS_DIR/djumbai-lspawn.log"
+chmod 600 "$LOGS_DIR/djumbai-lspawn.log"
 
 touch "$LOGS_DIR/djumbai-local.log"
-chmod 660 "$LOGS_DIR/djumbai-local.log"
+chmod 600 "$LOGS_DIR/djumbai-local.log"
 
 touch "$LOGS_DIR/djumbai-group-manager.log"
-chown "$userg" "$LOGS_DIR/djumbai-group-manager.log"
-chmod 660 "$LOGS_DIR/djumbai-group-manager.log"
+chown "$userg":"$userg" "$LOGS_DIR/djumbai-group-manager.log"
+chmod 600 "$LOGS_DIR/djumbai-group-manager.log"
 
 echo "/logs directory created"
 
