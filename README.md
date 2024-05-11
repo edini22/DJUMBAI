@@ -7,12 +7,9 @@ projeto TS3
 - criação e exclusão de grupos de utilizadores
 
 # Estrutura 
-- alias
 - bin
 - boot
-- control
 - doc
-- man
 - queue
     - intd
     - local
@@ -20,6 +17,7 @@ projeto TS3
     - pid
     - todo
 - users
+- groups
 
 # Send
 - todo/212321312.lnk
@@ -76,14 +74,8 @@ qmails (send)
 
 # TODO
 
-* handle SIGINT no djumbai-start para matar os filhos e fechar os pipes
+* ppt
 
-* resolver TODO'S
-
-* criar grupos de utilizadores
-
-* interface para os users verem as mensagens e ao ler a mensagem marcar como lida ( mudar de new para cur)
+* RELATORIO
 
 * comunicação síncrona
-
-* Proteger input do Inject

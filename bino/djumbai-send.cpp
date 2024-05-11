@@ -304,11 +304,6 @@ int main() {
 
     logger.log(LogLevel::INFO, "Starting DJUMBAI send service...");
 
-    if (system("ls -la /var/DJUMBAI/queue/todo") == -1) {
-        logger.log(LogLevel::ERROR, "Error executing ls command on /var/DJUMBAI/queue/todo folder");
-        return 1;
-    }
-
     startup(logger, pipe_name_spawn0, pipe_name_spawn1, pipe_name_clean0, pipe_name_clean1);
 
     while (true) {

@@ -15,63 +15,61 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-
 using namespace std;
 using namespace filesystem;
 
-void signalHandler(int signum) {
-    cout << "Received signal: " << signum << endl;
-    cout << "Exiting..." << endl;
+enum class LogLevel { INFO,
+                      WARNING,
+                      ERROR };
 
-    int shmid = shmget(IPC_PRIVATE, sizeof(int) * 3, 0600);
-    if (shmid == -1) {
-        std::cerr << "Failed to get shared memory segment." << std::endl;
-        exit(1);
+class Logger {
+public:
+    Logger(const string &filename) : logFile(filename, ios::app) {}
+
+    void log(LogLevel level, const string &message) {
+        // Obtém a data e hora atual
+        time_t now = time(nullptr);
+        tm *localTime = localtime(&now);
+        char timestamp[20];
+        strftime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S", localTime);
+
+        string levelStr;
+        switch (level) {
+        case LogLevel::INFO:
+            levelStr = "INFO";
+            break;
+        case LogLevel::WARNING:
+            levelStr = "WARNING";
+            break;
+        case LogLevel::ERROR:
+            levelStr = "ERROR";
+            break;
+        }
+
+        string formattedMessage = "[" + string(timestamp) + "][" + levelStr + "] " + message + "\n";
+
+        cout << formattedMessage;
+
+        logFile << formattedMessage;
+        logFile.flush();
     }
 
-    // Attach to the existing shared memory segment
-    int *shmem = (int *)shmat(shmid, NULL, 0);
-    if (shmem == (int *)-1) {
-        std::cerr << "Failed to attach to shared memory segment." << std::endl;
-        exit(1);
+    ~Logger() {
+        logFile.close();
     }
 
-    int pid1 = shmem[0];
-    int pid2 = shmem[1];
-    int pid3 = shmem[2];
-    cout << "PIDs: " << pid1 << " " << pid2 << " " << pid3 << endl;
-
-    if (pid1 > 0) {
-        cout << "Killing djumbai-send with PID: " << pid1 << endl;
-        kill(pid1, SIGINT);
-    }
-    if (pid2 > 0) {
-        cout << "Killing djumbai-clean with PID: " << pid2 << endl;
-        kill(pid2, SIGINT);
-    }
-    if (pid3 > 0) {
-        cout << "Killing djumbai-lspawn with PID: " << pid3 << endl;
-        kill(pid3, SIGINT);
-    }
-
-    // Detach from the shared memory segment
-    if (shmdt(shmem) == -1) {
-        std::cerr << "Failed to detach from shared memory segment." << std::endl;
-        exit(1);
-    }
-
-    // Remove shared memory segment
-    shmctl(shmid, IPC_RMID, NULL);
-
-    exit(signum);
-}
+private:
+    std::ofstream logFile;
+};
 
 int main() {
-    string line;
-    int djumbaiq, djumbais,djumbaig;
-    string filename = "/var/DJUMBAI/bin/uids.txt";
+    Logger logger("/var/DJUMBAI/log/djumbai-start-stop.log");
 
-    // signal(SIGINT, signalHandler);
+    remove("/var/DJUMBAI/boot/djumbai_start_stop");
+
+    string line;
+    int djumbaiq, djumbais, djumbaig;
+    string filename = "/var/DJUMBAI/bin/uids.txt";
 
     if (exists(filename)) {
         ifstream file(filename);
@@ -83,17 +81,17 @@ int main() {
             djumbais = stoi(line);
             getline(file, line);
             djumbaig = stoi(line);
-            file.close(); 
+            file.close();
         } else {
-            cerr << "START: Erro ao abrir o arquivo|." << strerror(errno)<< endl;
+            logger.log(LogLevel::ERROR, "Error opening file");
             return 1;
-        }  
+        }
     } else {
-        cerr << "START: Arquivo não existe." << strerror(errno)<< endl;
+        logger.log(LogLevel::ERROR, "File does not exist");
         return 1;
     }
 
-    //create pipe
+    // create pipe
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 
@@ -102,7 +100,7 @@ int main() {
 
     string chown = "chown " + to_string(djumbais) + ":" + to_string(djumbaiq) + " " + pipe_name_clean0;
     string chown1 = "chown " + to_string(djumbais) + ":" + to_string(djumbaiq) + " " + pipe_name_clean1;
-    
+
     mkfifo(pipe_name_clean0, 0770);
     system(chown.c_str());
     system("chmod 770 /tmp/clean_pipe0");
@@ -112,14 +110,18 @@ int main() {
 
     string chown2 = "chown " + to_string(djumbais) + " " + pipe_name_spawn0;
     string chown3 = "chown " + to_string(djumbais) + " " + pipe_name_spawn1;
-    
+
     mkfifo(pipe_name_spawn0, 0770);
     system(chown2.c_str());
-    //system("chmod 770 /tmp/clean_pipe0");
+    // system("chmod 770 /tmp/clean_pipe0");
     mkfifo(pipe_name_spawn1, 0770);
     system(chown3.c_str());
 
-
+    
+    // create file
+    const char *file_name = "/var/DJUMBAI/djumbai_start_stop";
+    ofstream file(file_name, ios::app);
+    
 
     // call the programs with specific uids
 
@@ -127,78 +129,29 @@ int main() {
     pid_t pid_clean;
     pid_t pid_lspawn;
     if (pid_send == 0) {
-        // child process
-        // setuid(djumbais);
-        // execl("/var/DJUMBAI/bin/djumbai-send", "djumbai-send", NULL);
-        // setsid();
-        // close(STDIN_FILENO);
-        // close(STDOUT_FILENO);
-        // close(STDERR_FILENO);
+        file << getpid() << endl;
+        file.close();
         system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
     } else {
         sleep(2);
         pid_clean = fork();
         if (pid_clean == 0) {
-            // child process
-            // setuid(djumbaiq);
-            // execl("/var/DJUMBAI/bin/djumbai-clean", "djumbai-clean", NULL);
-            // setsid();
-            // close(STDIN_FILENO);
-            // close(STDOUT_FILENO);
-            // close(STDERR_FILENO);
+            file << getpid() << endl;
+            file.close();
             system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
 
         } else {
             sleep(2);
-            pid_lspawn= fork();
+            pid_lspawn = fork();
             if (pid_lspawn == 0) {
-                // child process
-                // execl("/var/DJUMBAI/bin/djumbai-lspawn", "djumbai-lspawn", NULL);
-                // setsid();
-                // close(STDIN_FILENO);
-                // close(STDOUT_FILENO);
-                // close(STDERR_FILENO);
+                file << getpid() << endl;
+                file.close();
                 system("/var/DJUMBAI/bin/djumbai-lspawn");
-                
-            }else{
-                // parent process
-
-                // int shmid = shmget(IPC_PRIVATE, sizeof(int) * 3, IPC_CREAT | 0600);
-                // if (shmid == -1) {
-                //     std::cerr << "Failed to create shared memory segment." << std::endl;
-                //     exit(1);
-                // }
-
-                // int *shmem = (int *)shmat(shmid, NULL, 0);
-                // if (shmem == (int *)-1) {
-                //     std::cerr << "Failed to attach to shared memory segment." << std::endl;
-                //     exit(1);
-                // }
-
-                // shmem[0] = pid_send;
-                // shmem[1] = pid_clean;
-                // shmem[2] = pid_lspawn;
-
-                // // Detach from the shared memory segment
-                // if (shmdt(shmem) == -1) {
-                //     std::cerr << "Failed to detach from shared memory segment." << std::endl;
-                //     return 1;
-                // }
-
-                int status;
-                waitpid(pid_send, &status, 0);
-                cout << "Processo filho terminou com status: " << status << endl;
-                waitpid(pid_clean, &status, 0);
-                cout << "Processo filho terminou com status: " << status << endl;
-                waitpid(pid_lspawn, &status, 0);
-                cout << "Processo filho terminou com status: " << status << endl;
-            
+            } else {
+                file.close();
             }
         }
     }
-
-    
-    
 
     return 0;
 }

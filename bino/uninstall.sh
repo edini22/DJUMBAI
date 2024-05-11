@@ -18,7 +18,8 @@ rm -r "$INSTALL_DIR"
 rm /usr/local/bin/djumbai-inject
 rm /usr/local/bin/djumbai-check
 rm /usr/local/bin/djumbai-groups
-rm /usr/local/bin/djumbai-start
+rm /usr/local/bin/djumbai-start 
+rm /usr/local/bin/djumbai-stop 
 
 echo "DJUMBAI removed successfully."
 

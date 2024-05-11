@@ -56,7 +56,6 @@ chmod 111 "$BIN_DIR/djumbai-groups"
 
 chown "$userg" "$BIN_DIR/djumbai-group-manager"
 chmod 4101 "$BIN_DIR/djumbai-group-manager"
-# chmod u+s "$BIN_DIR/djumbai-group-manager"
 
 echo "/bin directory created"
 
@@ -65,8 +64,11 @@ echo "/bin directory created"
 mkdir -p "$BOOT_DIR"
 chmod 500 "$BOOT_DIR"
 
-cp ../boot/djumbai-start "$BOOT_DIR"
+cp ./djumbai-start "$BOOT_DIR"
 chmod 100 "$BOOT_DIR/djumbai-start"
+
+cp ../boot/djumbai-stop "$BOOT_DIR"
+chmod 100 "$BOOT_DIR/djumbai-stop"
 
 echo "/boot directory created"
 
@@ -120,13 +122,16 @@ echo "/groups directory created"
 
 mkdir -p "$LOGS_DIR"
 touch "$LOGS_DIR/djumbai-inject.log"
-chmod 666 "$LOGS_DIR/djumbai-inject.log"
+chmod 660 "$LOGS_DIR/djumbai-inject.log"
 
 touch "$LOGS_DIR/djumbai-check.log"
-chmod 666 "$LOGS_DIR/djumbai-check.log"
+chmod 660 "$LOGS_DIR/djumbai-check.log"
 
 touch "$LOGS_DIR/djumbai-groups.log"
-chmod 666 "$LOGS_DIR/djumbai-groups.log"
+chmod 660 "$LOGS_DIR/djumbai-groups.log"
+
+touch "$LOGS_DIR/djumbai-start-stop.log"
+chmod 660 "$LOGS_DIR/djumbai-start-stop.log"
 
 touch "$LOGS_DIR/djumbai-queue.log"
 chown "$userq" "$LOGS_DIR/djumbai-queue.log"
@@ -144,7 +149,7 @@ touch "$LOGS_DIR/djumbai-lspawn.log"
 chmod 660 "$LOGS_DIR/djumbai-lspawn.log"
 
 touch "$LOGS_DIR/djumbai-local.log"
-chmod 666 "$LOGS_DIR/djumbai-local.log"
+chmod 660 "$LOGS_DIR/djumbai-local.log"
 
 touch "$LOGS_DIR/djumbai-group-manager.log"
 chown "$userg" "$LOGS_DIR/djumbai-group-manager.log"
@@ -163,6 +168,7 @@ ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject
 ln -s /var/DJUMBAI/bin/djumbai-check /usr/local/bin/djumbai-check
 ln -s /var/DJUMBAI/bin/djumbai-groups /usr/local/bin/djumbai-groups
 ln -s /var/DJUMBAI/boot/djumbai-start /usr/local/bin/djumbai-start
+ln -s /var/DJUMBAI/boot/djumbai-stop /usr/local/bin/djumbai-stop
 
 echo "Symbolic links created"
 
