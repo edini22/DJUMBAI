@@ -92,14 +92,15 @@ bool validate_uid(const uid_t uid, Logger &logger) {
 
 int main(int argc, char *argv[]) {
 
-    // -c <name> <users>:criar                      //check
-    // -ru <name> <user>:remover user de grupo      //check
-    // -rg <name>       :remover grupo              //check
+    // -c <name> <users>:criar                      
+    // -ru <name> <user>:remover user de grupo      
+    // -rg <name>       :remover grupo              
     // -l <name>        :listar
     // -lg              :listar grupos
-    // -a <name> <user> :adicionar                  //check
+    // -a <name> <user> :adicionar                  
 
     Logger logger("/var/log/djumbai-groups.log");
+
     if (argc < 2) {
         logger.log(LogLevel::ERROR, "Insufficient arguments");
         return 1;

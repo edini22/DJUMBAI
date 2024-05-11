@@ -186,6 +186,22 @@ int create_mess(string message, string envelope, Logger &logger) {
 int main() {
     Logger logger("/var/DJUMBAI/log/djumbai-inject.log");
 
+
+    string line2;
+    ifstream uids_file("/var/DJUMBAI/bin/uids.txt");
+    getline(uids_file, line2);
+    int targetuid ;
+    try {
+        targetuid = stoi(line2);
+    } catch (const std::exception &e) {
+        logger.log(LogLevel::ERROR, "Error parsing UID");
+    }
+
+    if (setgid(targetuid) == -1 || setuid(targetuid) == -1) {
+        logger.log(LogLevel::ERROR, "Error setting UID");
+        exit(EXIT_FAILURE);
+    }
+
     string envelope;
 
     Message msg;
@@ -218,7 +234,11 @@ int main() {
         }
         envelope = "SENDER\n" + sender + "\n" + "RECEIVER\n" + receiver + "\n" + "SUBJECT\n" + subject + "\n";
 
-        create_mess(message, envelope, logger);
+        if(create_mess(message, envelope, logger)){
+            return 1;
+        } else {
+            logger.log(LogLevel::INFO, "Message has been queued for sending to " + receiver);
+        }
 
     } else { // is group
         const string path_group = "/var/DJUMBAI/groups/" + receiver + ".mdjumbai";

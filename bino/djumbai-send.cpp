@@ -4,6 +4,7 @@
 #include <iostream>
 #include <libgen.h>
 #include <pwd.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -288,6 +289,31 @@ int startup(Logger &logger, const char *pipe_name_spawn0, const char *pipe_name_
 int main() {
 
     Logger logger("/var/DJUMBAI/log/djumbai-send.log");
+
+    struct rlimit rlim;
+    rlim.rlim_cur = 0;
+    rlim.rlim_max = 0;
+    if (setrlimit(RLIMIT_NPROC, &rlim) == -1) {
+        perror("setrlimit failed");
+        exit(EXIT_FAILURE);
+    }
+
+    string line2;
+    ifstream uids_file("/var/DJUMBAI/bin/uids.txt");
+    getline(uids_file, line2);
+    getline(uids_file, line2);
+    int targetuid ;
+    try {
+        targetuid = stoi(line2);
+    } catch (const std::exception &e) {
+        logger.log(LogLevel::ERROR, "Error parsing UID");
+    }
+
+    if (setgid(targetuid) == -1 || setuid(targetuid) == -1) {
+        logger.log(LogLevel::ERROR, "Error setting UID");
+        exit(EXIT_FAILURE);
+    }
+
     const char *pipe_name_clean0 = "/tmp/clean_pipe0";
     const char *pipe_name_clean1 = "/tmp/clean_pipe1";
 

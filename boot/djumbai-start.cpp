@@ -68,7 +68,7 @@ int main() {
     remove("/var/DJUMBAI/boot/djumbai_start_stop");
 
     string line;
-    int djumbaiq, djumbais, djumbaig;
+    int djumbaiq, djumbais;
     string filename = "/var/DJUMBAI/bin/uids.txt";
 
     if (exists(filename)) {
@@ -79,8 +79,7 @@ int main() {
             djumbaiq = stoi(line);
             getline(file, line);
             djumbais = stoi(line);
-            getline(file, line);
-            djumbaig = stoi(line);
+
             file.close();
         } else {
             logger.log(LogLevel::ERROR, "Error opening file");
@@ -149,6 +148,7 @@ int main() {
                 system("/var/DJUMBAI/bin/djumbai-lspawn");
             } else {
                 file.close();
+                waitpid(pid_send, NULL, 0);
             }
         }
     }

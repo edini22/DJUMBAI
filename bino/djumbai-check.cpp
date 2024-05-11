@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <vector>
+#include <sys/resource.h>
 
 using namespace std;
 
@@ -146,6 +147,14 @@ vector<pair<string, bool>> printFolder(const string &folderPath, bool n, vector<
 
 int main(int argc, char *argv[]) {
     Logger logger("/var/DJUMBAI/logs/djumbai-check.log");
+
+    struct rlimit rlim;
+    rlim.rlim_cur = 0;
+    rlim.rlim_max = 0;
+    if (setrlimit(RLIMIT_NPROC, &rlim) == -1) {
+        perror("setrlimit failed");
+        exit(EXIT_FAILURE);
+    }
     
     bool flag = false;
 
