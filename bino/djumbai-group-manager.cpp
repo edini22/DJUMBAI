@@ -208,26 +208,7 @@ int main() {
 
         file << all_message;
         file.close();
-
-        // Open uids file
-        ifstream uids("/var/DJUMBAI/bin/uids.txt");
-        if (!uids.is_open()) {
-            logger.log(LogLevel::ERROR, "Failed to open file for reading");
-            return 1;
-        }
-        string userq;
-        getline(uids, userq);
-        uid_t uid;
-        try {
-            uid = stoi(userq);
-        } catch (const std::exception &e) {
-            logger.log(LogLevel::ERROR, "Invalid UID");
-            return 1;
-        }
-        chown(path.c_str(), getuid(), uid); // TODO: ir buscar ao file
         chmod(path.c_str(), 0750);
-
-        uids.close();
 
         const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.sender) + ".mdjumbai";
         add_remove_group(path1, msg.group_name, true);
