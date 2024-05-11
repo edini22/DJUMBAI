@@ -1,1 +1,0 @@
-The queue of unsent messages
