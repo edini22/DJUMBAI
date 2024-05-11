@@ -274,7 +274,11 @@ int main(int argc, char *argv[]) {
         serialize(msg_final, message_buffer);
 
         // Escrever a mensagem no pipe de input
-        write(input_pipe[1], message_buffer, sizeof(Message));
+        ssize_t w = write(input_pipe[1], message_buffer, sizeof(Message));
+        if (w == -1) {
+            logger.log(LogLevel::ERROR, "Error writing to pipe");
+            return 1;
+        }
 
         // Fechar pipe no fim de escrita
         close(input_pipe[1]);

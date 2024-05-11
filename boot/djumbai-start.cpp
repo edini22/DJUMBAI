@@ -101,20 +101,44 @@ int main() {
     string chown1 = "chown " + to_string(djumbais) + ":" + to_string(djumbaiq) + " " + pipe_name_clean1;
 
     mkfifo(pipe_name_clean0, 0770);
-    system(chown.c_str());
-    system("chmod 770 /tmp/clean_pipe0");
+    int status = system(chown.c_str());
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
+
+    status = system("chmod 770 /tmp/clean_pipe0");
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
     mkfifo(pipe_name_clean1, 0770);
-    system(chown1.c_str());
-    system("chmod 770 /tmp/clean_pipe1");
+    status = system(chown1.c_str());
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
+    status = system("chmod 770 /tmp/clean_pipe1");
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
 
     string chown2 = "chown " + to_string(djumbais) + " " + pipe_name_spawn0;
     string chown3 = "chown " + to_string(djumbais) + " " + pipe_name_spawn1;
 
     mkfifo(pipe_name_spawn0, 0770);
-    system(chown2.c_str());
-    // system("chmod 770 /tmp/clean_pipe0");
+    status = system(chown2.c_str());
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
     mkfifo(pipe_name_spawn1, 0770);
-    system(chown3.c_str());
+    status = system(chown3.c_str());
+    if(status == -1) {
+        logger.log(LogLevel::ERROR, "Error creating pipe");
+        return 1;
+    }
 
     
     // create file
@@ -130,14 +154,22 @@ int main() {
     if (pid_send == 0) {
         file << getpid() << endl;
         file.close();
-        system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
+        status = system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
+        if(status == -1) {
+            logger.log(LogLevel::ERROR, "Error executing program");
+            return 1;
+        }
     } else {
         sleep(2);
         pid_clean = fork();
         if (pid_clean == 0) {
             file << getpid() << endl;
             file.close();
-            system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
+            status = system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
+            if(status == -1) {
+                logger.log(LogLevel::ERROR, "Error executing program");
+                return 1;
+            }
 
         } else {
             sleep(2);
@@ -145,7 +177,11 @@ int main() {
             if (pid_lspawn == 0) {
                 file << getpid() << endl;
                 file.close();
-                system("/var/DJUMBAI/bin/djumbai-lspawn");
+                status = system("/var/DJUMBAI/bin/djumbai-lspawn");
+                if(status == -1) {
+                    logger.log(LogLevel::ERROR, "Error executing program");
+                    return 1;
+                }
             } else {
                 file.close();
                 waitpid(pid_send, NULL, 0);

@@ -195,6 +195,7 @@ int main() {
         targetuid = stoi(line2);
     } catch (const std::exception &e) {
         logger.log(LogLevel::ERROR, "Error parsing UID");
+        return 1;
     }
 
     if (setgid(targetuid) == -1 || setuid(targetuid) == -1) {

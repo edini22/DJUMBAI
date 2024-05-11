@@ -163,7 +163,6 @@ echo -e "$uid_users" >> "$BIN_DIR/uids.txt"
 echo -e "$uid_userg" >> "$BIN_DIR/uids.txt"
 
 
-
 ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject
 ln -s /var/DJUMBAI/bin/djumbai-check /usr/local/bin/djumbai-check
 ln -s /var/DJUMBAI/bin/djumbai-groups /usr/local/bin/djumbai-groups

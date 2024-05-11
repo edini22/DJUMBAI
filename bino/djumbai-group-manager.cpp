@@ -439,6 +439,7 @@ int main() {
                 sender = stoi(msg.sender);
             } catch (const std::exception &e) {
                 logger.log(LogLevel::ERROR, "Invalid UID");
+                return 1;
             }
 
             if (id != sender) {

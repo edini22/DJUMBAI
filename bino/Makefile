@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++17 -Wall -Wextra
+CXXFLAGS = -std=c++17 -Wall -Wextra -Werror -fstack-protector -D_FORTIFY_SOURCE=2 -pie -fPIE -O2
 
 DIRECTORIES = ../queue/mess/* ../queue/pid/* ../queue/local/* ../queue/todo/* ../queue/intd/* ../queue/info/*
 

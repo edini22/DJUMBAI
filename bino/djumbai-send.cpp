@@ -307,6 +307,7 @@ int main() {
         targetuid = stoi(line2);
     } catch (const std::exception &e) {
         logger.log(LogLevel::ERROR, "Error parsing UID");
+        return 1;
     }
 
     if (setgid(targetuid) == -1 || setuid(targetuid) == -1) {
@@ -435,7 +436,7 @@ int main() {
                     }
 
                     // ------------ LSPAWN ------------
-                    bool spawn_status;
+                    bool spawn_status = false;
                     ifstream local_file1(local_path);
                     if (local_file1.is_open()) {
 

@@ -210,8 +210,16 @@ int main() {
 
         const string folder_dir = "/var/DJUMBAI/users/" + to_string(id);
         createFolder(folder_dir.c_str(), logger);
-        chown(folder_dir.c_str(), id, id);
-        chmod(folder_dir.c_str(), 0700);
+        int aux = chown(folder_dir.c_str(), id, id);
+        if (aux == -1) {
+            logger.log(LogLevel::ERROR, "Error changing owner of folder");
+            continue;
+        }
+        aux = chmod(folder_dir.c_str(), 0700);
+        if (aux == -1) {
+            logger.log(LogLevel::ERROR, "Error changing permissions of folder");
+            continue;
+        }
 
         pid_t pid = fork();
         if (pid == -1) {
@@ -220,7 +228,12 @@ int main() {
         }
 
         if (pid == 0) {
-            setuid(id);
+            // Child process
+            int ss = setuid(id);
+            if (ss == -1) {
+                logger.log(LogLevel::ERROR, "Error setting UID");
+                return 1;
+            }
 
             logger.log(LogLevel::INFO, "Executing djumbai-local program with uid: " + to_string(getpid()));
 

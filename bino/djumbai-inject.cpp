@@ -232,13 +232,14 @@ int main(int argc, char *argv[]) {
         serialize(msg_final, message_buffer);
 
         // Escrever a mensagem no pipe de input
-        write(input_pipe[1], message_buffer, sizeof(Message));
-
+        ssize_t bytes_written = write(input_pipe[1], message_buffer, sizeof(Message));
+        if (bytes_written == -1) {
+            logger.log(LogLevel::ERROR, "Error writing to pipe");
+            return 1;
+        }
         // Fechar pipe no fim de escrita
         close(input_pipe[1]);
-
         //==============================================
-
         char buffer[1024];
         ssize_t bytesRead;
         while ((bytesRead = read(output_pipe[0], buffer, sizeof(buffer))) > 0) {
