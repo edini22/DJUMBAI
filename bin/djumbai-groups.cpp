@@ -181,6 +181,12 @@ int main(int argc, char *argv[]) {
         // Validar o UID
         sprintf(msg.sender, "%d", uid);
         if (strcmp(argv[1], "-c") == 0) {
+
+            if(strlen(argv[2]) > 20) {
+                logger.log(LogLevel::ERROR, "Group name has to be between 1 and 20 characters long");
+                return 1;
+            }
+
             for (int i = 3; i < argc; i++) {
                 for (size_t d = 0; d < strlen(argv[i]); ++d) {
 

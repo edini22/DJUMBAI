@@ -1,1 +1,0 @@
-Documentation, except man pages

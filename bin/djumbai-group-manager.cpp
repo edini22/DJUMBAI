@@ -295,6 +295,8 @@ int main() {
 
             const string path1 = "/var/DJUMBAI/groups/users/" + string(msg.group_members[0]) + ".mdjumbai";
             add_remove_group(path1, msg.group_name, false);
+
+            logger.log(LogLevel::INFO, "Member removed successfully");
         } else {
             logger.log(LogLevel::ERROR, "Failed to open file for reading");
             return 1;
