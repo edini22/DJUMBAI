@@ -18,9 +18,9 @@ userq="djumbaiq"
 users="djumbais"
 userg="djumbaig"
 
-useradd "$userq"
-useradd "$users"
-useradd "$userg"
+useradd "$userq" > /dev/null 2>&1
+useradd "$users" > /dev/null 2>&1
+useradd "$userg" > /dev/null 2>&1
 
 # Obter UIDs dos utilizadores
 uid_userq=$(get_user_uid "$userq")
@@ -163,11 +163,11 @@ echo -e "$uid_users" >> "$BIN_DIR/uids.txt"
 echo -e "$uid_userg" >> "$BIN_DIR/uids.txt"
 
 
-ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject
-ln -s /var/DJUMBAI/bin/djumbai-check /usr/local/bin/djumbai-check
-ln -s /var/DJUMBAI/bin/djumbai-groups /usr/local/bin/djumbai-groups
-ln -s /var/DJUMBAI/boot/djumbai-start /usr/local/bin/djumbai-start
-ln -s /var/DJUMBAI/boot/djumbai-stop /usr/local/bin/djumbai-stop
+ln -s /var/DJUMBAI/bin/djumbai-inject /usr/local/bin/djumbai-inject > /dev/null 2>&1
+ln -s /var/DJUMBAI/bin/djumbai-check /usr/local/bin/djumbai-check > /dev/null 2>&1
+ln -s /var/DJUMBAI/bin/djumbai-groups /usr/local/bin/djumbai-groups > /dev/null 2>&1
+ln -s /var/DJUMBAI/boot/djumbai-start /usr/local/bin/djumbai-start > /dev/null 2>&1
+ln -s /var/DJUMBAI/boot/djumbai-stop /usr/local/bin/djumbai-stop > /dev/null 2>&1
 
 echo "Symbolic links created"
 

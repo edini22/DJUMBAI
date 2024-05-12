@@ -3,35 +3,34 @@
 # Encontrar e matar o processo djumbai-send
 pid_send=$(pgrep -f "/var/DJUMBAI/bin/djumbai-send")
 if [ -n "$pid_send" ]; then
-    echo "Matando processo djumbai-send (PID: $pid_send)..."
+    echo "Killing process djumbai-send..."
     kill $pid_send
 else
-    echo "Processo djumbai-send não está em execução."
+    echo "Process djumbai-send is not running."
 fi
 
 # Encontrar e matar o processo djumbai-clean
 pid_clean=$(pgrep -f "/var/DJUMBAI/bin/djumbai-clean")
 if [ -n "$pid_clean" ]; then
-    echo "Matando processo djumbai-clean (PID: $pid_clean)..."
+    echo "Killing process djumbai-clean..."
     kill $pid_clean
 else
-    echo "Processo djumbai-clean não está em execução."
+    echo "Process djumbai-clean is not running."
 fi
 
 # Encontrar e matar o processo djumbai-lspawn
 pid_lspawn=$(pgrep -f "/var/DJUMBAI/bin/djumbai-lspawn")
 if [ -n "$pid_lspawn" ]; then
-    echo "Matando processo djumbai-lspawn (PID: $pid_lspawn)..."
+    echo "Killing process djumbai-lspawn..."
     kill $pid_lspawn
 else
-    echo "Processo djumbai-lspawn não está em execução."
+    echo "Process djumbai-lspawn is not running."
 fi
 
-# Encontrar e matar o processo djumbai-lspawn
-pid_start=$(pgrep -f "/var/DJUMBAI/bin/djumbai-start")
-if [ -n "$pid_start" ]; then
-    echo "Matando processo djumbai-lspawn (PID: $pid_start)..."
-    kill $pid_start
-else
-    echo "Processo djumbai-lspawn não está em execução."
-fi
+
+rm /tmp/clean_pipe0 > /dev/null 2>&1
+rm /tmp/clean_pipe1 > /dev/null 2>&1
+rm /tmp/spawn_pipe0 > /dev/null 2>&1
+rm /tmp/spawn_pipe1 > /dev/null 2>&1
+
+echo "DJUMABI terminated"

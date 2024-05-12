@@ -157,6 +157,10 @@ int main() {
         
         if (setsid() < 0)
             exit(EXIT_FAILURE);
+        
+        close(STDIN_FILENO);
+        close(STDOUT_FILENO);
+        close(STDERR_FILENO);
 
         status = system("sudo -u djumbais /var/DJUMBAI/bin/djumbai-send");
         
@@ -174,6 +178,10 @@ int main() {
             if (setsid() < 0)
                 exit(EXIT_FAILURE);
 
+            close(STDIN_FILENO);
+            close(STDOUT_FILENO);
+            close(STDERR_FILENO);
+
             status = system("sudo -u djumbaiq /var/DJUMBAI/bin/djumbai-clean");
             if(status == -1) {
                 logger.log(LogLevel::ERROR, "Error executing program");
@@ -190,6 +198,10 @@ int main() {
                 if (setsid() < 0)
                     exit(EXIT_FAILURE);
 
+                close(STDIN_FILENO);
+                close(STDOUT_FILENO);
+                close(STDERR_FILENO);
+
                 status = system("/var/DJUMBAI/bin/djumbai-lspawn");
                 if(status == -1) {
                     logger.log(LogLevel::ERROR, "Error executing program");
@@ -197,6 +209,7 @@ int main() {
                 }
             } else {
                 file.close();
+                logger.log(LogLevel::INFO, "DJUMBAI started");
                 return 0;
                 //waitpid(pid_send, NULL, 0);
             }
