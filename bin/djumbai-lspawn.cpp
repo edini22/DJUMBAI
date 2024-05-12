@@ -135,7 +135,7 @@ int parseUID(const string &input, Logger &logger) {
 }
 
 int main() {
-    Logger logger("/var/log/djumbai-lspawn.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-lspawn.log");
 
     const char *pipe_name_spawn0 = "/tmp/spawn_pipe0";
     const char *pipe_name_spawn1 = "/tmp/spawn_pipe1";

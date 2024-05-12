@@ -56,7 +56,7 @@ private:
 };
 
 int main() {
-    Logger logger("/var/log/djumbai-clean.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-clean.log");
 
     string line2;
     ifstream uids_file("/var/DJUMBAI/bin/uids.txt");

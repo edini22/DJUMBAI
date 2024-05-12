@@ -84,7 +84,7 @@ int createFolder(const char *path, Logger &logger) {
 }
 
 int main(int argc, char *argv[]) {
-    Logger logger("/var/DJUMBAI/djumbai-local.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-local.log");
 
     // recebe email por parametro
     if (argc != 2) {

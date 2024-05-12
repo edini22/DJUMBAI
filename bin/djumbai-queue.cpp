@@ -184,7 +184,7 @@ int create_mess(string message, string envelope, Logger &logger) {
 }
 
 int main() {
-    Logger logger("/var/DJUMBAI/log/djumbai-inject.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-queue.log");
 
 
     string line2;

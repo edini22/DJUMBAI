@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
     // -lg              :listar grupos
     // -a <name> <user> :adicionar                  
 
-    Logger logger("/var/log/djumbai-groups.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-groups.log");
 
     if (argc < 2) {
         logger.log(LogLevel::ERROR, "Insufficient arguments");

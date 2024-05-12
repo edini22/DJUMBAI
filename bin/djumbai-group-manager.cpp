@@ -136,7 +136,7 @@ bool add_remove_group(const string &path, const string &group, bool flag) {
 }
 
 int main() {
-    Logger logger("/var/log/djumbai-group-manager.log");
+    Logger logger("/var/DJUMBAI/log/djumbai-group-manager.log");
     Message msg;
     char buffer[sizeof(Message)];
 
